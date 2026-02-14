@@ -1,0 +1,11 @@
+{
+  "name": "LifeTracker",
+  "short_name": "LifeTracker",
+  "description": "Track your life focus areas, projects, and time allocation",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f0f1a",
+  "theme_color": "#6c63ff",
+  "orientation": "portrait",
+  "icons": []
+}

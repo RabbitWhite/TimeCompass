@@ -1,0 +1,101 @@
+import { createContext, useContext, useReducer, useEffect, type ReactNode } from 'react';
+import type { AppState, AppAction } from './types';
+
+const STORAGE_KEY = 'lifetracker-state';
+
+const defaultState: AppState = {
+  focusAreas: [],
+  projects: [],
+  timeEntries: [],
+  calendarEvents: [],
+  activeTracking: null,
+  settings: {
+    timeWindowDays: 7,
+    googleCalendarConnected: false,
+    googleAccessToken: '',
+    googleClientId: '',
+  },
+};
+
+function loadState(): AppState {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return { ...defaultState, ...parsed, settings: { ...defaultState.settings, ...parsed.settings } };
+    }
+  } catch { /* ignore */ }
+  return defaultState;
+}
+
+function saveState(state: AppState) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch { /* ignore */ }
+}
+
+function reducer(state: AppState, action: AppAction): AppState {
+  switch (action.type) {
+    case 'ADD_FOCUS_AREA':
+      return { ...state, focusAreas: [...state.focusAreas, action.payload] };
+    case 'UPDATE_FOCUS_AREA':
+      return { ...state, focusAreas: state.focusAreas.map(a => a.id === action.payload.id ? action.payload : a) };
+    case 'DELETE_FOCUS_AREA':
+      return {
+        ...state,
+        focusAreas: state.focusAreas.filter(a => a.id !== action.payload),
+        projects: state.projects.filter(p => p.focusAreaId !== action.payload),
+        timeEntries: state.timeEntries.filter(t => t.focusAreaId !== action.payload),
+      };
+    case 'ADD_PROJECT':
+      return { ...state, projects: [...state.projects, action.payload] };
+    case 'UPDATE_PROJECT':
+      return { ...state, projects: state.projects.map(p => p.id === action.payload.id ? action.payload : p) };
+    case 'DELETE_PROJECT':
+      return { ...state, projects: state.projects.filter(p => p.id !== action.payload) };
+    case 'ADD_TIME_ENTRY':
+      return { ...state, timeEntries: [...state.timeEntries, action.payload] };
+    case 'UPDATE_TIME_ENTRY':
+      return { ...state, timeEntries: state.timeEntries.map(t => t.id === action.payload.id ? action.payload : t) };
+    case 'DELETE_TIME_ENTRY':
+      return { ...state, timeEntries: state.timeEntries.filter(t => t.id !== action.payload) };
+    case 'SET_CALENDAR_EVENTS':
+      return { ...state, calendarEvents: action.payload };
+    case 'ADD_CALENDAR_EVENT':
+      return { ...state, calendarEvents: [...state.calendarEvents, action.payload] };
+    case 'DELETE_CALENDAR_EVENT':
+      return { ...state, calendarEvents: state.calendarEvents.filter(e => e.id !== action.payload) };
+    case 'START_TRACKING':
+      return { ...state, activeTracking: action.payload };
+    case 'STOP_TRACKING':
+      return { ...state, activeTracking: null };
+    case 'UPDATE_SETTINGS':
+      return { ...state, settings: { ...state.settings, ...action.payload } };
+    case 'LOAD_STATE':
+      return action.payload;
+    default:
+      return state;
+  }
+}
+
+const AppContext = createContext<{ state: AppState; dispatch: React.Dispatch<AppAction> } | null>(null);
+
+export function AppProvider({ children }: { children: ReactNode }) {
+  const [state, dispatch] = useReducer(reducer, null, loadState);
+
+  useEffect(() => {
+    saveState(state);
+  }, [state]);
+
+  return (
+    <AppContext.Provider value={{ state, dispatch }}>
+      {children}
+    </AppContext.Provider>
+  );
+}
+
+export function useApp() {
+  const ctx = useContext(AppContext);
+  if (!ctx) throw new Error('useApp must be used within AppProvider');
+  return ctx;
+}

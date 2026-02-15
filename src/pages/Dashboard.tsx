@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../store';
-import { formatDuration, isThisWeek, getWeekStart, formatTime, formatDate } from '../utils';
-import type { TimeEntry, CalendarEvent } from '../types';
+import { formatDuration, isThisWeek, getWeekStart, formatTime, formatDate, calculateWeeklyScore, getLevelFromPoints } from '../utils';
 
 export default function Dashboard() {
   const { state } = useApp();
@@ -46,6 +45,34 @@ export default function Dashboard() {
     return { area, mins, target: area.weeklyTargetHours * 60 };
   });
 
+  // Gamification
+  const gamSettings = state.settings.gamification;
+  const currentWeekStart = getWeekStart();
+  const previousStreak = useMemo(() => {
+    const prevScores = state.weeklyScores
+      .filter(s => new Date(s.weekStart) < currentWeekStart)
+      .sort((a, b) => new Date(b.weekStart).getTime() - new Date(a.weekStart).getTime());
+    let streak = 0;
+    for (const s of prevScores) {
+      if (s.areaScores.length > 0 && s.areaScores.every(a => a.completionRate >= 1)) {
+        streak++;
+      } else break;
+    }
+    return streak;
+  }, [state.weeklyScores]);
+
+  const currentScore = useMemo(() => {
+    return calculateWeeklyScore(state.focusAreas, state.timeEntries, gamSettings, currentWeekStart, previousStreak);
+  }, [state.focusAreas, state.timeEntries, gamSettings, previousStreak]);
+
+  const allTimePoints = state.weeklyScores.reduce((s, w) => {
+    // Use live score for current week
+    if (new Date(w.weekStart).getTime() === currentWeekStart.getTime()) return s + currentScore.totalPoints;
+    return s + w.totalPoints;
+  }, state.weeklyScores.find(w => new Date(w.weekStart).getTime() === currentWeekStart.getTime()) ? 0 : currentScore.totalPoints);
+
+  const level = getLevelFromPoints(allTimePoints);
+
   return (
     <div>
       <div className="dash-welcome">
@@ -78,6 +105,24 @@ export default function Dashboard() {
           <div className="label">Target</div>
         </div>
       </div>
+
+      {gamSettings.enabled && state.focusAreas.some(a => a.weeklyTargetHours > 0) && (
+        <div className="dash-points-card" onClick={() => navigate('/gamification')}>
+          <div className="dash-points-left">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="var(--warning)">
+              <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+            </svg>
+            <div>
+              <div className="dash-points-level">Lv.{level.level} {level.title}</div>
+              <div className="dash-points-total">{Math.round(allTimePoints)} pts total</div>
+            </div>
+          </div>
+          <div className="dash-points-right">
+            <div className="dash-points-week">+{currentScore.totalPoints}</div>
+            <div className="dash-points-label">this week</div>
+          </div>
+        </div>
+      )}
 
       {areaHours.length > 0 && (
         <>

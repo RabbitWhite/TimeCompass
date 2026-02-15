@@ -46,11 +46,38 @@ export interface ActiveTracking {
   startTime: string;
 }
 
+export interface GamificationSettings {
+  pointsPerTargetHour: number;   // points earned per hour of target when fully met
+  balanceBasePoints: number;     // base points for perfect balance across all areas
+  streakBonusPoints: number;     // bonus points per consecutive week of all-targets-met
+  enabled: boolean;
+}
+
+export interface WeeklyScore {
+  weekStart: string;             // ISO date of Monday
+  achievementPoints: number;     // points from hitting targets
+  balancePoints: number;         // points from balanced distribution
+  streakBonus: number;           // streak bonus points
+  totalPoints: number;
+  areaScores: AreaScore[];       // per-area breakdown
+  balanceRatio: number;          // 0-1, how balanced the week was
+  streakWeeks: number;           // how many consecutive weeks targets met
+}
+
+export interface AreaScore {
+  focusAreaId: string;
+  targetHours: number;
+  actualHours: number;
+  completionRate: number;        // 0-1, capped at 1
+  pointsEarned: number;
+}
+
 export interface AppSettings {
   timeWindowDays: number;
   googleCalendarConnected: boolean;
   googleAccessToken: string;
   googleClientId: string;
+  gamification: GamificationSettings;
 }
 
 export interface AppState {
@@ -60,6 +87,7 @@ export interface AppState {
   calendarEvents: CalendarEvent[];
   activeTracking: ActiveTracking | null;
   settings: AppSettings;
+  weeklyScores: WeeklyScore[];
 }
 
 export type AppAction =
@@ -78,6 +106,8 @@ export type AppAction =
   | { type: 'START_TRACKING'; payload: ActiveTracking }
   | { type: 'STOP_TRACKING' }
   | { type: 'UPDATE_SETTINGS'; payload: Partial<AppSettings> }
+  | { type: 'UPDATE_GAMIFICATION_SETTINGS'; payload: Partial<GamificationSettings> }
+  | { type: 'SAVE_WEEKLY_SCORE'; payload: WeeklyScore }
   | { type: 'LOAD_STATE'; payload: AppState };
 
 export const AREA_ICONS = [

@@ -62,6 +62,121 @@ export function minutesBetween(start: string, end: string): number {
   return (new Date(end).getTime() - new Date(start).getTime()) / 60000;
 }
 
+import type { FocusArea, TimeEntry, GamificationSettings, WeeklyScore, AreaScore } from './types';
+
+/**
+ * Calculate the weekly gamification score.
+ *
+ * Scoring philosophy:
+ * - Achievement: each area earns points proportional to min(1, actual/target).
+ *   No extra credit for exceeding a single area's target.
+ * - Balance: measures how uniformly all areas track toward their targets.
+ *   Uses 1 - 2*stddev of completion rates, scaled by the average completion.
+ *   Over-investing in one area while neglecting others yields a low balance score.
+ * - Streak: consecutive weeks where every area reaches its target earn a bonus.
+ */
+export function calculateWeeklyScore(
+  focusAreas: FocusArea[],
+  timeEntries: TimeEntry[],
+  settings: GamificationSettings,
+  weekStartDate: Date,
+  previousStreakWeeks: number,
+): WeeklyScore {
+  const weekEnd = new Date(weekStartDate);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+  weekEnd.setHours(23, 59, 59, 999);
+
+  const areasWithTargets = focusAreas.filter(a => a.weeklyTargetHours > 0);
+
+  const areaScores: AreaScore[] = areasWithTargets.map(area => {
+    const areaMinutes = timeEntries
+      .filter(e => {
+        const d = new Date(e.startTime);
+        return e.focusAreaId === area.id && d >= weekStartDate && d <= weekEnd;
+      })
+      .reduce((s, e) => s + e.duration, 0);
+    const actualHours = areaMinutes / 60;
+    const completionRate = area.weeklyTargetHours > 0
+      ? Math.min(1, actualHours / area.weeklyTargetHours)
+      : 0;
+    const pointsEarned = completionRate * settings.pointsPerTargetHour * area.weeklyTargetHours;
+
+    return {
+      focusAreaId: area.id,
+      targetHours: area.weeklyTargetHours,
+      actualHours: Math.round(actualHours * 100) / 100,
+      completionRate,
+      pointsEarned: Math.round(pointsEarned * 10) / 10,
+    };
+  });
+
+  const achievementPoints = areaScores.reduce((s, a) => s + a.pointsEarned, 0);
+
+  // Balance calculation
+  let balanceRatio = 0;
+  let balancePoints = 0;
+  if (areaScores.length > 1) {
+    const rates = areaScores.map(a => a.completionRate);
+    const avg = rates.reduce((s, r) => s + r, 0) / rates.length;
+    const variance = rates.reduce((s, r) => s + (r - avg) ** 2, 0) / rates.length;
+    const stddev = Math.sqrt(variance);
+    // Max possible stddev for [0,1] values is 0.5, so scale accordingly
+    balanceRatio = Math.max(0, 1 - 2 * stddev);
+    // Scale balance points by average completion so doing nothing = 0 balance points
+    balancePoints = balanceRatio * avg * settings.balanceBasePoints * areaScores.length;
+  } else if (areaScores.length === 1) {
+    // Single area: balance is trivially perfect, scale by completion
+    balanceRatio = 1;
+    balancePoints = areaScores[0].completionRate * settings.balanceBasePoints;
+  }
+  balancePoints = Math.round(balancePoints * 10) / 10;
+
+  // Streak: all areas must reach >= 100% completion
+  const allTargetsMet = areaScores.length > 0 && areaScores.every(a => a.completionRate >= 1);
+  const streakWeeks = allTargetsMet ? previousStreakWeeks + 1 : 0;
+  const streakBonus = streakWeeks > 0
+    ? Math.round(streakWeeks * settings.streakBonusPoints * 10) / 10
+    : 0;
+
+  const totalPoints = Math.round((achievementPoints + balancePoints + streakBonus) * 10) / 10;
+
+  return {
+    weekStart: weekStartDate.toISOString(),
+    achievementPoints: Math.round(achievementPoints * 10) / 10,
+    balancePoints,
+    streakBonus,
+    totalPoints,
+    areaScores,
+    balanceRatio: Math.round(balanceRatio * 100) / 100,
+    streakWeeks,
+  };
+}
+
+export function getWeekLabel(weekStartISO: string): string {
+  const d = new Date(weekStartISO);
+  const end = new Date(d);
+  end.setDate(end.getDate() + 6);
+  const fmt = (date: Date) => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return `${fmt(d)} - ${fmt(end)}`;
+}
+
+export function getLevelFromPoints(totalPoints: number): { level: number; title: string; nextThreshold: number; progress: number } {
+  const thresholds = [0, 50, 150, 300, 500, 800, 1200, 1800, 2500, 3500, 5000];
+  const titles = [
+    'Beginner', 'Apprentice', 'Journeyman', 'Adept',
+    'Expert', 'Master', 'Grandmaster', 'Legend',
+    'Mythic', 'Transcendent', 'Ascended',
+  ];
+  let level = 0;
+  for (let i = thresholds.length - 1; i >= 0; i--) {
+    if (totalPoints >= thresholds[i]) { level = i; break; }
+  }
+  const current = thresholds[level];
+  const next = level < thresholds.length - 1 ? thresholds[level + 1] : thresholds[level] + 1000;
+  const progress = (totalPoints - current) / (next - current);
+  return { level, title: titles[level], nextThreshold: next, progress: Math.min(1, progress) };
+}
+
 export function getIconSvg(icon: string): string {
   const icons: Record<string, string> = {
     code: 'M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z',

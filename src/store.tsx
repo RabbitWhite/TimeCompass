@@ -14,7 +14,14 @@ const defaultState: AppState = {
     googleCalendarConnected: false,
     googleAccessToken: '',
     googleClientId: '',
+    gamification: {
+      pointsPerTargetHour: 10,
+      balanceBasePoints: 20,
+      streakBonusPoints: 15,
+      enabled: true,
+    },
   },
+  weeklyScores: [],
 };
 
 function loadState(): AppState {
@@ -22,7 +29,16 @@ function loadState(): AppState {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
-      return { ...defaultState, ...parsed, settings: { ...defaultState.settings, ...parsed.settings } };
+      return {
+        ...defaultState,
+        ...parsed,
+        settings: {
+          ...defaultState.settings,
+          ...parsed.settings,
+          gamification: { ...defaultState.settings.gamification, ...parsed.settings?.gamification },
+        },
+        weeklyScores: parsed.weeklyScores || [],
+      };
     }
   } catch { /* ignore */ }
   return defaultState;
@@ -71,6 +87,28 @@ function reducer(state: AppState, action: AppAction): AppState {
       return { ...state, activeTracking: null };
     case 'UPDATE_SETTINGS':
       return { ...state, settings: { ...state.settings, ...action.payload } };
+    case 'UPDATE_GAMIFICATION_SETTINGS':
+      return {
+        ...state,
+        settings: {
+          ...state.settings,
+          gamification: { ...state.settings.gamification, ...action.payload },
+        },
+      };
+    case 'SAVE_WEEKLY_SCORE': {
+      const existing = state.weeklyScores.findIndex(
+        s => s.weekStart === action.payload.weekStart
+      );
+      const scores = [...state.weeklyScores];
+      if (existing >= 0) {
+        scores[existing] = action.payload;
+      } else {
+        scores.push(action.payload);
+      }
+      // Keep only last 52 weeks
+      scores.sort((a, b) => new Date(b.weekStart).getTime() - new Date(a.weekStart).getTime());
+      return { ...state, weeklyScores: scores.slice(0, 52) };
+    }
     case 'LOAD_STATE':
       return action.payload;
     default:

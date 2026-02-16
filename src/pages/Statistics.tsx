@@ -89,7 +89,7 @@ export default function Statistics() {
       return val;
     };
 
-    const header = ['Date', 'Start Time', 'End Time', 'Duration (min)', 'Duration (hours)', 'Focus Area', 'Project', 'Note'];
+    const header = ['Date', 'Start Time', 'End Time', 'Duration (min)', 'Duration (hours)', 'Focus Area', 'Realization', 'Note'];
     const rows = entries
       .sort((a: TimeEntry, b: TimeEntry) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
       .map((e: TimeEntry) => {

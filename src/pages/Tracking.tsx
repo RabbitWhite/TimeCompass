@@ -132,7 +132,7 @@ export default function Tracking() {
                 payload: { ...state.activeTracking!, projectId: e.target.value },
               })}
             >
-              <option value="">No project</option>
+              <option value="">No realization</option>
               {state.projects
                 .filter(p => p.focusAreaId === activeArea.id)
                 .map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -255,7 +255,7 @@ export default function Tracking() {
           </div>
           {mArea && (
             <div className="form-group">
-              <label className="form-label">Project (optional)</label>
+              <label className="form-label">Realization (optional)</label>
               <select className="form-select" value={mProject} onChange={e => setMProject(e.target.value)}>
                 <option value="">None</option>
                 {state.projects.filter(p => p.focusAreaId === mArea).map(p => (

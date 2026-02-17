@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import BottomNav from './components/BottomNav';
 import Dashboard from './pages/Dashboard';
@@ -15,7 +15,14 @@ import './App.css';
 export default function App() {
   const { state, dispatch } = useApp();
   const [showData, setShowData] = useState(false);
+  const [swUpdateReady, setSwUpdateReady] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handler = () => setSwUpdateReady(true);
+    window.addEventListener('sw-update-ready', handler);
+    return () => window.removeEventListener('sw-update-ready', handler);
+  }, []);
 
   const exportData = () => {
     const json = JSON.stringify(state, null, 2);
@@ -57,6 +64,14 @@ export default function App() {
           </button>
         </div>
       </header>
+      {swUpdateReady && (
+        <div className="update-banner">
+          <span>New version available</span>
+          <button className="btn btn-sm" onClick={() => window.location.reload()}>
+            Update
+          </button>
+        </div>
+      )}
       <main className="app-content">
         <Routes>
           <Route path="/" element={<Dashboard />} />

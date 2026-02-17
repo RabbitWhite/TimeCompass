@@ -66,6 +66,27 @@ a { color: var(--primary); text-decoration: none; }
   display: flex;
   gap: 8px;
 }
+.update-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.update-banner .btn {
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.4);
+  padding: 4px 12px;
+  font-size: 12px;
+  min-height: 28px;
+  white-space: nowrap;
+}
 .app-content {
   flex: 1;
   overflow-y: auto;
@@ -471,6 +492,15 @@ a { color: var(--primary); text-decoration: none; }
 .tracker-banner .btn {
   margin-top: 12px;
   background: rgba(255, 255, 255, 0.2);
+}
+.tracking-stale-warning {
+  font-size: 12px;
+  background: rgba(255, 200, 0, 0.25);
+  border: 1px solid rgba(255, 200, 0, 0.5);
+  border-radius: 8px;
+  padding: 6px 12px;
+  margin-top: 8px;
+  color: #ffe066;
 }
 .tracking-project-select {
   margin: 6px auto 2px;

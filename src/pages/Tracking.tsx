@@ -36,6 +36,8 @@ export default function Tracking() {
     ? state.focusAreas.find(a => a.id === state.activeTracking!.focusAreaId)
     : null;
 
+  const isStaleSession = elapsed > 8 * 3600; // tracking open for more than 8 hours
+
   const startTracking = (areaId: string) => {
     if (state.activeTracking) stopTracking();
     dispatch({
@@ -139,6 +141,11 @@ export default function Tracking() {
             </select>
           )}
           <div className="tracking-time">{formatElapsed(elapsed)}</div>
+          {isStaleSession && (
+            <div className="tracking-stale-warning">
+              Session running for a long time — did you forget to stop?
+            </div>
+          )}
           <button className="btn" onClick={stopTracking}>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
               <path d="M6 6h12v12H6z" />

@@ -75,7 +75,7 @@ export default function FocusAreas() {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div className="card-title truncate">{area.name}</div>
                 <div className="card-subtitle">
-                  {projects.length} project{projects.length !== 1 ? 's' : ''}
+                  {projects.length} realization{projects.length !== 1 ? 's' : ''}
                   {' \u2022 '}
                   {formatDuration(weekMins)} this week
                 </div>

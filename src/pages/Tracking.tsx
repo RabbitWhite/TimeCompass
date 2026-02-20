@@ -123,6 +123,21 @@ export default function Tracking() {
         <div className="tracker-banner" style={{ background: `linear-gradient(135deg, ${activeArea.color}, ${activeArea.color}99)` }}>
           <div className="tracking-label">Tracking</div>
           <div className="tracking-area">{activeArea.name}</div>
+          {state.projects.filter(p => p.focusAreaId === activeArea.id).length > 0 && (
+            <select
+              className="tracking-project-select"
+              value={state.activeTracking.projectId}
+              onChange={e => dispatch({
+                type: 'START_TRACKING',
+                payload: { ...state.activeTracking!, projectId: e.target.value },
+              })}
+            >
+              <option value="">No realization</option>
+              {state.projects
+                .filter(p => p.focusAreaId === activeArea.id)
+                .map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          )}
           <div className="tracking-time">{formatElapsed(elapsed)}</div>
           <button className="btn" onClick={stopTracking}>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
@@ -200,11 +215,13 @@ export default function Tracking() {
       </div>
       {todayEntries.map(entry => {
         const area = state.focusAreas.find(a => a.id === entry.focusAreaId);
+        const project = entry.projectId ? state.projects.find(p => p.id === entry.projectId) : null;
         return (
           <div className="time-entry" key={entry.id}>
             <div className="time-entry-info">
               <div className="time-entry-area" style={{ color: area?.color }}>
                 {area?.name || 'Unknown'}
+                {project && <span className="time-entry-project"> / {project.name}</span>}
               </div>
               <div className="time-entry-time">
                 {formatTime(entry.startTime)} - {formatTime(entry.endTime)}
@@ -238,7 +255,7 @@ export default function Tracking() {
           </div>
           {mArea && (
             <div className="form-group">
-              <label className="form-label">Project (optional)</label>
+              <label className="form-label">Realization (optional)</label>
               <select className="form-select" value={mProject} onChange={e => setMProject(e.target.value)}>
                 <option value="">None</option>
                 {state.projects.filter(p => p.focusAreaId === mArea).map(p => (

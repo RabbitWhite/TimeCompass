@@ -472,6 +472,32 @@ a { color: var(--primary); text-decoration: none; }
   margin-top: 12px;
   background: rgba(255, 255, 255, 0.2);
 }
+.tracking-project-select {
+  margin: 6px auto 2px;
+  padding: 6px 28px 6px 10px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 16px;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 4px center;
+  background-size: 20px;
+  outline: none;
+  max-width: 200px;
+}
+.tracking-project-select option {
+  background: var(--surface);
+  color: var(--text);
+}
+.time-entry-project {
+  font-weight: 400;
+  font-size: 12px;
+  opacity: 0.7;
+}
 .quick-buttons {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

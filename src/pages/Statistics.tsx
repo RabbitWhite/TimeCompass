@@ -1,6 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useApp } from '../store';
 import { formatDuration, getWeekStart, getWeekEnd, getDaysBetween, isSameDay, formatDate } from '../utils';
+import type { TimeEntry } from '../types';
 
 type Period = 'this_week' | 'last_week' | 'this_month' | 'last_30';
 
@@ -80,6 +81,44 @@ export default function Statistics() {
 
   const maxDaily = Math.max(1, ...dailyData.map(d => d.total));
 
+  const exportCSV = useCallback(() => {
+    const csvEscape = (val: string) => {
+      if (val.includes(',') || val.includes('"') || val.includes('\n')) {
+        return `"${val.replace(/"/g, '""')}"`;
+      }
+      return val;
+    };
+
+    const header = ['Date', 'Start Time', 'End Time', 'Duration (min)', 'Duration (hours)', 'Focus Area', 'Realization', 'Note'];
+    const rows = entries
+      .sort((a: TimeEntry, b: TimeEntry) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+      .map((e: TimeEntry) => {
+        const area = state.focusAreas.find(a => a.id === e.focusAreaId);
+        const project = e.projectId ? state.projects.find(p => p.id === e.projectId) : null;
+        const start = new Date(e.startTime);
+        const end = new Date(e.endTime);
+        return [
+          start.toISOString().split('T')[0],
+          start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+          end.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+          String(e.duration),
+          (e.duration / 60).toFixed(2),
+          area?.name || 'Unknown',
+          project?.name || '',
+          e.note || '',
+        ].map(csvEscape).join(',');
+      });
+
+    const csv = [header.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `lifetracker-${period}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }, [entries, state.focusAreas, state.projects, period]);
+
   // Pie chart data
   const pieData = areaBreakdown.filter(a => a.minutes > 0);
   const pieTotal = Math.max(1, pieData.reduce((s, a) => s + a.minutes, 0));
@@ -88,6 +127,14 @@ export default function Statistics() {
     <div>
       <div className="section-header">
         <span className="section-title">Statistics</span>
+        {entries.length > 0 && (
+          <button className="btn btn-secondary btn-sm" onClick={exportCSV}>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+              <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
+            </svg>
+            Export CSV
+          </button>
+        )}
       </div>
 
       <div className="timeline-controls">

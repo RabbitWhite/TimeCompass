@@ -96,7 +96,7 @@ export default function FocusAreaDetail() {
       </div>
 
       <div className="section-header mt-16">
-        <span className="section-title">Projects</span>
+        <span className="section-title">Realizations</span>
         <button className="btn btn-primary btn-sm" onClick={openNew}>+ Add</button>
       </div>
 
@@ -144,14 +144,14 @@ export default function FocusAreaDetail() {
 
       {projects.length === 0 && (
         <div className="empty-state">
-          <p>No projects yet. Add a project to get started.</p>
+          <p>No realizations yet. Add a realization to get started.</p>
         </div>
       )}
 
       {showForm && (
-        <Modal title={editing ? 'Edit Project' : 'New Project'} onClose={() => setShowForm(false)}>
+        <Modal title={editing ? 'Edit Realization' : 'New Realization'} onClose={() => setShowForm(false)}>
           <div className="form-group">
-            <label className="form-label">Project Name</label>
+            <label className="form-label">Realization Name</label>
             <input
               className="form-input"
               value={pName}

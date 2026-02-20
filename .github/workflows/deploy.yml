@@ -34,6 +34,9 @@ jobs:
 
   deploy:
     needs: build
+    # Only deploy from main — GitHub Pages environment protection rules
+    # block deployments from feature branches.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment:
       name: github-pages

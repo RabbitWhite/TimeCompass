@@ -9,6 +9,7 @@ import Tracking from './pages/Tracking';
 import Statistics from './pages/Statistics';
 import Gamification from './pages/Gamification';
 import Modal from './components/Modal';
+import SplashScreen from './components/SplashScreen';
 import { useApp } from './store';
 import './App.css';
 
@@ -53,6 +54,8 @@ export default function App() {
   };
 
   return (
+    <>
+    <SplashScreen />
     <div className="app-layout">
       <header className="app-header">
         <h1>LifeTracker</h1>
@@ -115,5 +118,6 @@ export default function App() {
         </Modal>
       )}
     </div>
+    </>
   );
 }

@@ -154,7 +154,12 @@ function decodePNG(buf) {
   return { pixels, width, height };
 }
 
-// ─── Area-averaging downscale ─────────────────────────────────────────────────
+// ─── Area-averaging downscale (premultiplied alpha) ───────────────────────────
+//
+// Averaging straight (non-premultiplied) RGBA with transparent pixels causes
+// colour bleeding: e.g. a transparent-white corner averaged with an opaque dark
+// edge produces a grey/white fringe. Fix: premultiply RGB by A before averaging,
+// then un-premultiply afterwards so only opaque pixels contribute colour.
 
 function resize(src, srcW, srcH, dstW, dstH) {
   const dst = new Uint8Array(dstW * dstH * 4);
@@ -166,7 +171,8 @@ function resize(src, srcW, srcH, dstW, dstH) {
       const x0 = dx * scaleX, x1 = x0 + scaleX;
       const y0 = dy * scaleY, y1 = y0 + scaleY;
 
-      let r = 0, g = 0, b = 0, a = 0, weight = 0;
+      // Accumulate in premultiplied space
+      let pr = 0, pg = 0, pb = 0, pa = 0, weight = 0;
 
       for (let sy = Math.floor(y0); sy < Math.ceil(y1); sy++) {
         for (let sx = Math.floor(x0); sx < Math.ceil(x1); sx++) {
@@ -174,19 +180,28 @@ function resize(src, srcW, srcH, dstW, dstH) {
           const wy = Math.min(sy + 1, y1) - Math.max(sy, y0);
           const w = wx * wy;
           const idx = (Math.min(sy, srcH - 1) * srcW + Math.min(sx, srcW - 1)) * 4;
-          r += src[idx]     * w;
-          g += src[idx + 1] * w;
-          b += src[idx + 2] * w;
-          a += src[idx + 3] * w;
+          const alpha = src[idx + 3] / 255;
+          pr += src[idx]     * alpha * w;
+          pg += src[idx + 1] * alpha * w;
+          pb += src[idx + 2] * alpha * w;
+          pa += src[idx + 3]         * w;
           weight += w;
         }
       }
 
       const out = (dy * dstW + dx) * 4;
-      dst[out]     = Math.round(r / weight);
-      dst[out + 1] = Math.round(g / weight);
-      dst[out + 2] = Math.round(b / weight);
-      dst[out + 3] = Math.round(a / weight);
+      const avgA = pa / weight;
+      if (avgA < 1) {
+        // Nearly transparent — write transparent black to avoid any fringe
+        dst[out] = dst[out + 1] = dst[out + 2] = dst[out + 3] = 0;
+      } else {
+        // Un-premultiply
+        const invA = 255 / avgA;
+        dst[out]     = Math.min(255, Math.round(pr / weight * invA));
+        dst[out + 1] = Math.min(255, Math.round(pg / weight * invA));
+        dst[out + 2] = Math.min(255, Math.round(pb / weight * invA));
+        dst[out + 3] = Math.min(255, Math.round(avgA));
+      }
     }
   }
   return dst;

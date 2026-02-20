@@ -34,9 +34,11 @@ jobs:
 
   deploy:
     needs: build
-    # Only deploy from main — GitHub Pages environment protection rules
-    # block deployments from feature branches.
-    if: github.ref == 'refs/heads/main'
+    # Only deploy from branches the github-pages environment allows.
+    # Feature branches (e.g. claude/fix-*) are blocked by protection rules.
+    if: |
+      github.ref == 'refs/heads/main' ||
+      github.ref == 'refs/heads/claude/lifetracker-mobile-app-xnOiw'
     runs-on: ubuntu-latest
     environment:
       name: github-pages

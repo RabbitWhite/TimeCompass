@@ -22,6 +22,7 @@ const defaultState: AppState = {
     },
   },
   weeklyScores: [],
+  weekTemplates: [],
 };
 
 function loadState(): AppState {
@@ -38,6 +39,7 @@ function loadState(): AppState {
           gamification: { ...defaultState.settings.gamification, ...parsed.settings?.gamification },
         },
         weeklyScores: parsed.weeklyScores || [],
+        weekTemplates: parsed.weekTemplates || [],
       };
     }
   } catch { /* ignore */ }
@@ -111,6 +113,31 @@ function reducer(state: AppState, action: AppAction): AppState {
     }
     case 'LOAD_STATE':
       return action.payload;
+    case 'ADD_WEEK_TEMPLATE':
+      return { ...state, weekTemplates: [...state.weekTemplates, action.payload] };
+    case 'UPDATE_WEEK_TEMPLATE':
+      return { ...state, weekTemplates: state.weekTemplates.map(t => t.id === action.payload.id ? action.payload : t) };
+    case 'DELETE_WEEK_TEMPLATE':
+      return { ...state, weekTemplates: state.weekTemplates.filter(t => t.id !== action.payload) };
+    case 'APPLY_WEEK_TEMPLATE': {
+      const template = state.weekTemplates.find(t => t.id === action.payload);
+      if (!template) return state;
+      const updatedFocusAreas = state.focusAreas.map(area => {
+        const target = template.focusAreaTargets.find(t => t.focusAreaId === area.id);
+        return target ? { ...area, weeklyTargetHours: target.weeklyTargetHours } : area;
+      });
+      const updatedProjects = state.projects.map(project => {
+        for (const areaTarget of template.focusAreaTargets) {
+          const pt = areaTarget.projectTargets.find(p => p.projectId === project.id);
+          if (pt) return { ...project, weeklyTargetHours: pt.weeklyTargetHours };
+        }
+        return project;
+      });
+      const updatedTemplates = state.weekTemplates.map(t =>
+        t.id === action.payload ? { ...t, lastUsedAt: new Date().toISOString() } : t
+      );
+      return { ...state, focusAreas: updatedFocusAreas, projects: updatedProjects, weekTemplates: updatedTemplates };
+    }
     default:
       return state;
   }

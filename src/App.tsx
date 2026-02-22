@@ -8,6 +8,7 @@ import Timeline from './pages/Timeline';
 import Tracking from './pages/Tracking';
 import Statistics from './pages/Statistics';
 import Gamification from './pages/Gamification';
+import WeekTemplates from './pages/WeekTemplates';
 import Modal from './components/Modal';
 import SplashScreen from './components/SplashScreen';
 import { useApp } from './store';
@@ -84,6 +85,7 @@ export default function App() {
           <Route path="/track" element={<Tracking />} />
           <Route path="/stats" element={<Statistics />} />
           <Route path="/gamification" element={<Gamification />} />
+          <Route path="/templates" element={<WeekTemplates />} />
         </Routes>
       </main>
       <BottomNav />

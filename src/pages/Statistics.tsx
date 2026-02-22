@@ -301,7 +301,7 @@ export default function Statistics() {
                       width: '100%',
                       maxWidth: 32,
                       height: `${Math.max(height, total > 0 ? 4 : 0)}%`,
-                      background: isToday ? 'var(--primary)' : 'var(--surface-elevated)',
+                      background: isToday ? 'var(--primary)' : 'rgba(108, 99, 255, 0.35)',
                       borderRadius: 3,
                       transition: 'height 0.3s',
                     }}

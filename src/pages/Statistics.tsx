@@ -283,7 +283,9 @@ export default function Statistics() {
           <div className="chart-title">Daily Activity</div>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 120, padding: '8px 0' }}>
             {dailyData.map(({ date, total }) => {
-              const height = maxDaily > 0 ? (total / maxDaily) * 100 : 0;
+              const maxBarPx = 90;
+              const barPx = maxDaily > 0 ? Math.round((total / maxDaily) * maxBarPx) : 0;
+              const finalPx = total > 0 ? Math.max(barPx, 4) : 0;
               const isToday = isSameDay(date, new Date());
               return (
                 <div
@@ -292,15 +294,17 @@ export default function Statistics() {
                     flex: 1,
                     display: 'flex',
                     flexDirection: 'column',
+                    justifyContent: 'flex-end',
                     alignItems: 'center',
                     gap: 4,
+                    height: maxBarPx + 20,
                   }}
                 >
                   <div
                     style={{
                       width: '100%',
                       maxWidth: 32,
-                      height: `${Math.max(height, total > 0 ? 4 : 0)}%`,
+                      height: finalPx,
                       background: isToday ? 'var(--primary)' : 'rgba(108, 99, 255, 0.35)',
                       borderRadius: 3,
                       transition: 'height 0.3s',

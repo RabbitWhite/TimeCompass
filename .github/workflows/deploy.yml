@@ -22,9 +22,25 @@ jobs:
         with:
           node-version: 20
 
-      - run: npm install
+      - name: Install dependencies
+        run: |
+          npm config delete proxy || true
+          npm config delete https-proxy || true
+          npm install
+        env:
+          HTTP_PROXY: ""
+          HTTPS_PROXY: ""
+          http_proxy: ""
+          https_proxy: ""
+          npm_config_proxy: ""
+          npm_config_https_proxy: ""
 
       - run: npm run build
+        env:
+          HTTP_PROXY: ""
+          HTTPS_PROXY: ""
+          http_proxy: ""
+          https_proxy: ""
 
       # Push dist/ directly to the gh-pages branch.
       # This bypasses the github-pages environment and its branch

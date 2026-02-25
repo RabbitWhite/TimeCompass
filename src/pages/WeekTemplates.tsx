@@ -5,6 +5,8 @@ import Modal from '../components/Modal';
 import { generateId } from '../utils';
 import type { WeekTemplate, TemplateFocusAreaTarget } from '../types';
 
+const MAX_WEEKLY_HOURS = 24 * 7; // 168
+
 type View = 'list' | 'editor';
 
 function buildInitialTargets(
@@ -14,15 +16,19 @@ function buildInitialTargets(
 ): TemplateFocusAreaTarget[] {
   return focusAreas.map(area => {
     const existing = base?.focusAreaTargets.find(t => t.focusAreaId === area.id);
+    const areaProjects = projects.filter(p => p.focusAreaId === area.id);
+    const projectTargets = areaProjects.map(p => {
+      const ep = existing?.projectTargets.find(pt => pt.projectId === p.id);
+      return { projectId: p.id, weeklyTargetHours: ep?.weeklyTargetHours ?? p.weeklyTargetHours ?? 0 };
+    });
+    // Area total is always derived from project targets if there are projects
+    const derivedHours = areaProjects.length > 0
+      ? projectTargets.reduce((s, p) => s + p.weeklyTargetHours, 0)
+      : (existing?.weeklyTargetHours ?? area.weeklyTargetHours);
     return {
       focusAreaId: area.id,
-      weeklyTargetHours: existing?.weeklyTargetHours ?? area.weeklyTargetHours,
-      projectTargets: projects
-        .filter(p => p.focusAreaId === area.id)
-        .map(p => {
-          const ep = existing?.projectTargets.find(pt => pt.projectId === p.id);
-          return { projectId: p.id, weeklyTargetHours: ep?.weeklyTargetHours ?? p.weeklyTargetHours ?? 0 };
-        }),
+      weeklyTargetHours: derivedHours,
+      projectTargets,
     };
   });
 }
@@ -34,7 +40,7 @@ export default function WeekTemplates() {
   const [view, setView] = useState<View>('list');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmApplyId, setConfirmApplyId] = useState<string | null>(null);
-  const [applied, setApplied] = useState<string | null>(null); // name of just-applied template
+  const [applied, setApplied] = useState<string | null>(null);
 
   // ── Editor state ──────────────────────────────────────────────────────────
   const [tName, setTName] = useState('');
@@ -46,8 +52,15 @@ export default function WeekTemplates() {
     setEditingId(null);
     setTName('');
     setTDescription('');
-    setTTargets(buildInitialTargets(state.focusAreas, state.projects));
-    setExpandedAreas(new Set());
+    const targets = buildInitialTargets(state.focusAreas, state.projects);
+    setTTargets(targets);
+    // Auto-expand areas that have projects so users can set project-level hours
+    const withProjects = new Set(
+      state.focusAreas
+        .filter(a => state.projects.some(p => p.focusAreaId === a.id))
+        .map(a => a.id)
+    );
+    setExpandedAreas(withProjects);
     setView('editor');
   };
 
@@ -55,13 +68,19 @@ export default function WeekTemplates() {
     setEditingId(template.id);
     setTName(template.name);
     setTDescription(template.description);
-    setTTargets(buildInitialTargets(state.focusAreas, state.projects, template));
-    setExpandedAreas(new Set());
+    const targets = buildInitialTargets(state.focusAreas, state.projects, template);
+    setTTargets(targets);
+    const withProjects = new Set(
+      state.focusAreas
+        .filter(a => state.projects.some(p => p.focusAreaId === a.id))
+        .map(a => a.id)
+    );
+    setExpandedAreas(withProjects);
     setView('editor');
   };
 
   const save = () => {
-    if (!tName.trim()) return;
+    if (!tName.trim() || totalEditorHours > MAX_WEEKLY_HOURS) return;
     const now = new Date().toISOString();
     if (editingId) {
       const base = state.weekTemplates.find(t => t.id === editingId)!;
@@ -85,10 +104,15 @@ export default function WeekTemplates() {
     setTTargets(prev => prev.map(t => t.focusAreaId === areaId ? { ...t, weeklyTargetHours: hours } : t));
 
   const setProjectHours = (areaId: string, projectId: string, hours: number) =>
-    setTTargets(prev => prev.map(t => t.focusAreaId === areaId
-      ? { ...t, projectTargets: t.projectTargets.map(p => p.projectId === projectId ? { ...p, weeklyTargetHours: hours } : p) }
-      : t
-    ));
+    setTTargets(prev => prev.map(t => {
+      if (t.focusAreaId !== areaId) return t;
+      const newProjectTargets = t.projectTargets.map(p =>
+        p.projectId === projectId ? { ...p, weeklyTargetHours: hours } : p
+      );
+      // Area total is always the sum of its project targets
+      const areaTotal = newProjectTargets.reduce((s, p) => s + p.weeklyTargetHours, 0);
+      return { ...t, projectTargets: newProjectTargets, weeklyTargetHours: areaTotal };
+    }));
 
   const toggleArea = (areaId: string) =>
     setExpandedAreas(prev => {
@@ -98,6 +122,7 @@ export default function WeekTemplates() {
     });
 
   const totalEditorHours = tTargets.reduce((s, t) => s + t.weeklyTargetHours, 0);
+  const overLimit = totalEditorHours > MAX_WEEKLY_HOURS;
 
   // ─────────────────────────────────────────────────────────────────────────
   // EDITOR VIEW
@@ -136,8 +161,36 @@ export default function WeekTemplates() {
 
         <div className="section-header mt-16">
           <span className="section-title">Focus Area Targets</span>
-          <span className="text-secondary text-sm">{totalEditorHours}h/week total</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span
+              className="tmpl-total-badge"
+              style={{
+                background: overLimit ? 'var(--danger, #e53e3e)' : 'var(--primary)',
+                color: '#fff',
+                borderRadius: 12,
+                padding: '2px 10px',
+                fontSize: 13,
+                fontWeight: 700,
+              }}
+            >
+              {totalEditorHours}h / {MAX_WEEKLY_HOURS}h
+            </span>
+          </div>
         </div>
+
+        {overLimit && (
+          <div style={{
+            background: 'rgba(229, 62, 62, 0.12)',
+            border: '1px solid rgba(229, 62, 62, 0.4)',
+            borderRadius: 8,
+            padding: '8px 12px',
+            marginBottom: 12,
+            fontSize: 13,
+            color: 'var(--danger, #e53e3e)',
+          }}>
+            Total exceeds {MAX_WEEKLY_HOURS}h/week (24 × 7). Reduce targets before saving.
+          </div>
+        )}
 
         {state.focusAreas.length === 0 && (
           <p className="text-secondary text-sm" style={{ textAlign: 'center', padding: '24px 0' }}>
@@ -149,6 +202,7 @@ export default function WeekTemplates() {
           const area = state.focusAreas.find(a => a.id === target.focusAreaId);
           if (!area) return null;
           const areaProjects = state.projects.filter(p => p.focusAreaId === area.id && p.status !== 'completed');
+          const hasProjects = areaProjects.length > 0;
           const isExpanded = expandedAreas.has(area.id);
           return (
             <div key={area.id} className="tmpl-area-block">
@@ -158,16 +212,30 @@ export default function WeekTemplates() {
                   <span>{area.name}</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <input
-                    className="form-input tmpl-hours-input"
-                    type="number"
-                    value={target.weeklyTargetHours}
-                    onChange={e => setAreaHours(area.id, parseFloat(e.target.value) || 0)}
-                    min="0"
-                    step="0.5"
-                  />
+                  {hasProjects ? (
+                    // Read-only sum derived from project targets
+                    <span style={{
+                      minWidth: 52,
+                      textAlign: 'right',
+                      fontWeight: 700,
+                      fontSize: 15,
+                      color: 'var(--text)',
+                    }}>
+                      {target.weeklyTargetHours}h
+                    </span>
+                  ) : (
+                    // Editable when no projects exist
+                    <input
+                      className="form-input tmpl-hours-input"
+                      type="number"
+                      value={target.weeklyTargetHours}
+                      onChange={e => setAreaHours(area.id, parseFloat(e.target.value) || 0)}
+                      min="0"
+                      step="0.5"
+                    />
+                  )}
                   <span className="text-secondary" style={{ fontSize: 12, width: 26 }}>h/w</span>
-                  {areaProjects.length > 0 && (
+                  {hasProjects && (
                     <button className="tmpl-expand-btn" onClick={() => toggleArea(area.id)}>
                       <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"
                         style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
@@ -208,7 +276,7 @@ export default function WeekTemplates() {
 
         <div className="modal-actions mt-16">
           <button className="btn btn-secondary" onClick={() => setView('list')}>Cancel</button>
-          <button className="btn btn-primary" onClick={save} disabled={!tName.trim()}>
+          <button className="btn btn-primary" onClick={save} disabled={!tName.trim() || overLimit}>
             {editingId ? 'Save Changes' : 'Create Template'}
           </button>
         </div>
@@ -311,7 +379,6 @@ export default function WeekTemplates() {
               {template.focusAreaTargets.filter(t => t.weeklyTargetHours > 0).map(target => {
                 const area = state.focusAreas.find(a => a.id === target.focusAreaId);
                 if (!area) return null;
-                const projTargets = target.projectTargets.filter(p => p.weeklyTargetHours > 0);
                 return (
                   <div key={target.focusAreaId} className="tmpl-preview-row">
                     <div className="allocation-name" style={{ fontSize: 13 }}>

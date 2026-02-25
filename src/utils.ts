@@ -189,7 +189,9 @@ export function getPeriodIndex(weekStart: Date): number {
 
 export function getPeriodDateRange(periodIndex: number): { start: Date; end: Date } {
   const start = new Date(PERIOD_ANCHOR_MS + periodIndex * PERIOD_MS);
-  const end = new Date(start.getTime() + PERIOD_MS - 1);
+  // End = the Sunday of week 4 (start + 27 days), so periods display as
+  // non-overlapping Mon–Sun ranges regardless of timezone.
+  const end = new Date(start.getTime() + 27 * 24 * 3600 * 1000);
   return { start, end };
 }
 

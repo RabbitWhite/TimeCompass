@@ -177,6 +177,50 @@ export function getLevelFromPoints(totalPoints: number): { level: number; title:
   return { level, title: titles[level], nextThreshold: next, progress: Math.min(1, progress) };
 }
 
+// ── Reward period utilities ───────────────────────────────────────────────
+// A "period" is a rolling 4-week block anchored to a known Monday.
+const PERIOD_ANCHOR_MS = new Date('2020-01-06T00:00:00.000Z').getTime(); // known Monday
+const WEEK_MS = 7 * 24 * 3600 * 1000;
+const PERIOD_MS = 4 * WEEK_MS;
+
+export function getPeriodIndex(weekStart: Date): number {
+  return Math.floor((weekStart.getTime() - PERIOD_ANCHOR_MS) / PERIOD_MS);
+}
+
+export function getPeriodDateRange(periodIndex: number): { start: Date; end: Date } {
+  const start = new Date(PERIOD_ANCHOR_MS + periodIndex * PERIOD_MS);
+  const end = new Date(start.getTime() + PERIOD_MS - 1);
+  return { start, end };
+}
+
+/** Max achievable points for a week given current settings (excluding streak bonus). */
+export function computeMaxWeekPoints(
+  focusAreas: FocusArea[],
+  settings: GamificationSettings,
+): number {
+  const areas = focusAreas.filter(a => a.weeklyTargetHours > 0);
+  const n = areas.length;
+  if (n === 0) return 0;
+  const achievement = areas.reduce((s, a) => s + settings.pointsPerTargetHour * a.weeklyTargetHours, 0);
+  const balance = n > 1 ? settings.balanceBasePoints * n : settings.balanceBasePoints;
+  return achievement + balance;
+}
+
+/** Convert accumulated points in a period to euros, proportional to budget. */
+export function pointsToEuros(
+  actualPoints: number,
+  maxWeekPoints: number,
+  budget: number,
+): number {
+  if (maxWeekPoints === 0 || budget === 0) return 0;
+  const periodMax = maxWeekPoints * 4;
+  return Math.min(budget, (actualPoints / periodMax) * budget);
+}
+
+export function formatEuros(amount: number): string {
+  return amount.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 export function getIconSvg(icon: string): string {
   const icons: Record<string, string> = {
     code: 'M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z',

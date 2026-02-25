@@ -19,6 +19,7 @@ const defaultState: AppState = {
       balanceBasePoints: 20,
       streakBonusPoints: 15,
       enabled: true,
+      monthlyRewardBudget: 0,
     },
   },
   weeklyScores: [],

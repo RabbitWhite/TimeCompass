@@ -72,6 +72,7 @@ export interface GamificationSettings {
   balanceBasePoints: number;     // base points for perfect balance across all areas
   streakBonusPoints: number;     // bonus points per consecutive week of all-targets-met
   enabled: boolean;
+  monthlyRewardBudget: number;   // euros per 4-week period, 0 = disabled
 }
 
 export interface WeeklyScore {

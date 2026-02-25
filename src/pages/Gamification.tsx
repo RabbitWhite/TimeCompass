@@ -8,6 +8,7 @@ import {
   formatDuration,
   getPeriodIndex,
   getPeriodDateRange,
+  getWeekWithinPeriod,
   computeMaxWeekPoints,
   pointsToEuros,
   formatEuros,
@@ -56,10 +57,8 @@ export default function Gamification() {
   const currentPeriodIdx = getPeriodIndex(currentWeekStart);
   const { start: periodStart, end: periodEnd } = getPeriodDateRange(currentPeriodIdx);
 
-  // Week number within current period (1–4)
-  const weekWithinPeriod = Math.floor(
-    (currentWeekStart.getTime() - periodStart.getTime()) / (7 * 24 * 3600 * 1000),
-  ) + 1;
+  // Week number within current period (1–4), timezone-safe
+  const weekWithinPeriod = getWeekWithinPeriod(currentWeekStart, currentPeriodIdx);
 
   // Sum all points earned within the current period (use live currentScore for this week)
   const currentPeriodPoints = useMemo(() => {

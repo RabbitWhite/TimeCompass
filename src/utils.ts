@@ -184,7 +184,11 @@ const WEEK_MS = 7 * 24 * 3600 * 1000;
 const PERIOD_MS = 4 * WEEK_MS;
 
 export function getPeriodIndex(weekStart: Date): number {
-  return Math.floor((weekStart.getTime() - PERIOD_ANCHOR_MS) / PERIOD_MS);
+  // Use noon UTC of the LOCAL calendar date so that timezone offsets (e.g. UTC+2
+  // where local midnight = 22:00 of the previous UTC day) never accidentally push
+  // the date into the wrong period.
+  const noonUTC = Date.UTC(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate(), 12);
+  return Math.floor((noonUTC - PERIOD_ANCHOR_MS) / PERIOD_MS);
 }
 
 export function getPeriodDateRange(periodIndex: number): { start: Date; end: Date } {
@@ -193,6 +197,14 @@ export function getPeriodDateRange(periodIndex: number): { start: Date; end: Dat
   // non-overlapping Mon–Sun ranges regardless of timezone.
   const end = new Date(start.getTime() + 27 * 24 * 3600 * 1000);
   return { start, end };
+}
+
+/** Returns 1–4: which week within the period this week falls in. */
+export function getWeekWithinPeriod(weekStart: Date, periodIndex: number): number {
+  const periodStartDate = new Date(PERIOD_ANCHOR_MS + periodIndex * PERIOD_MS);
+  const weekNoon = Date.UTC(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate(), 12);
+  const periodNoon = Date.UTC(periodStartDate.getUTCFullYear(), periodStartDate.getUTCMonth(), periodStartDate.getUTCDate(), 12);
+  return Math.min(4, Math.max(1, Math.floor((weekNoon - periodNoon) / WEEK_MS) + 1));
 }
 
 /** Max achievable points for a week given current settings (excluding streak bonus). */

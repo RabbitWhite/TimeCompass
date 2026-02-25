@@ -18,33 +18,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install dependencies
-        run: |
-          npm config delete proxy || true
-          npm config delete https-proxy || true
-          npm install
-        env:
-          HTTP_PROXY: ""
-          HTTPS_PROXY: ""
-          http_proxy: ""
-          https_proxy: ""
-          npm_config_proxy: ""
-          npm_config_https_proxy: ""
-
-      - run: npm run build
-        env:
-          HTTP_PROXY: ""
-          HTTPS_PROXY: ""
-          http_proxy: ""
-          https_proxy: ""
-
-      # Push dist/ directly to the gh-pages branch.
-      # This bypasses the github-pages environment and its branch
-      # protection rules, so it works from any trigger branch.
+      # The dist/ folder is pre-built locally via build-cdn.sh (uses tsc, no npm registry needed).
+      # Just deploy it to gh-pages.
       - name: Deploy to gh-pages branch
         run: |
           cd dist

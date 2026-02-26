@@ -7,8 +7,8 @@
   --primary: #6c63ff;
   --primary-dim: rgba(108, 99, 255, 0.15);
   --text: #ffffff;
-  --text-secondary: #dbd6ff;
-  --text-muted: #b0a8e4;
+  --text-secondary: #ede9ff;
+  --text-muted: #c8c0ff;
   --border: rgba(255, 255, 255, 0.18);
   --success: #4caf50;
   --warning: #f5a623;
@@ -437,18 +437,17 @@ a { color: var(--primary); text-decoration: none; }
 /* === Timeline === */
 .timeline-controls {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 16px;
-  overflow-x: auto;
-  padding-bottom: 4px;
 }
 .timeline-chip {
-  padding: 8px 16px;
+  padding: 7px 14px;
   border-radius: 20px;
   background: var(--surface);
   border: 1px solid var(--border);
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;

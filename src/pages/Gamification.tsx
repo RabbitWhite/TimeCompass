@@ -154,7 +154,7 @@ export default function Gamification() {
                   background: periodProgressPct >= 1 ? 'var(--success)' : 'var(--primary)',
                 }} />
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: 12, color: 'var(--text-secondary)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: 14, color: 'var(--text-secondary)' }}>
                 <span>€0</span>
                 <span style={{ fontWeight: 600, color: 'var(--text)' }}>
                   {Math.round(periodProgressPct * 100)}% of €{formatEuros(budget)}
@@ -163,7 +163,7 @@ export default function Gamification() {
               </div>
             </div>
 
-            <div style={{ marginTop: 10, fontSize: 12, color: 'var(--text-secondary)', textAlign: 'center' }}>
+            <div style={{ marginTop: 10, fontSize: 14, color: 'var(--text-secondary)', textAlign: 'center' }}>
               {fmtDate(periodStart)} – {fmtDate(periodEnd)}
               {'  •  '}Week {weekWithinPeriod} of 4
             </div>
@@ -176,7 +176,7 @@ export default function Gamification() {
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                fontSize: 13,
+                fontSize: 15,
               }}>
                 <span style={{ color: 'var(--text-secondary)' }}>Total acquired (past periods)</span>
                 <span style={{ fontWeight: 700, color: 'var(--success)' }}>€{formatEuros(totalAcquiredEuros)}</span>
@@ -185,7 +185,7 @@ export default function Gamification() {
           </>
         ) : (
           <div style={{ textAlign: 'center', padding: '8px 0' }}>
-            <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12 }}>
+            <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 12 }}>
               Set a monthly reward budget to track your financial incentive.
               Points still accumulate in the background.
             </div>
@@ -260,7 +260,7 @@ export default function Gamification() {
                     <span className="dot" style={{ background: area.color }} />
                     {area.name}
                   </div>
-                  <span style={{ fontSize: 12, color: pct >= 100 ? 'var(--success)' : 'var(--text-secondary)' }}>
+                  <span style={{ fontSize: 14, color: pct >= 100 ? 'var(--success)' : 'var(--text-secondary)' }}>
                     {pct}%
                   </span>
                 </div>
@@ -273,7 +273,7 @@ export default function Gamification() {
                 <div className="area-score-detail">
                   <span>{formatDuration(Math.round(as.actualHours * 60))} / {as.targetHours}h target</span>
                   {budget > 0 && (
-                    <span style={{ color: 'var(--text-secondary)', fontSize: 11 }}>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
                       {as.pointsEarned} pts
                     </span>
                   )}
@@ -379,7 +379,7 @@ export default function Gamification() {
                       {new Date(score.weekStart).toLocaleDateString('en', { month: 'narrow', day: 'numeric' })}
                     </span>
                     {budget > 0 && maxWeekPts > 0 ? (
-                      <span className="history-pts" style={{ fontSize: 9 }}>
+                      <span className="history-pts" style={{ fontSize: 11 }}>
                         €{formatEuros(pointsToEuros(score.totalPoints, maxWeekPts, budget / 4))}
                       </span>
                     ) : (

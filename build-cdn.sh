@@ -62,7 +62,7 @@ cp src/App.css dist/
 
 # 5. Generate sw.js with correct precache list (replaces the Vite placeholder version)
 cat > dist/sw.js << 'SWEOF'
-const CACHE_NAME = 'lifetracker-v7';
+const CACHE_NAME = 'lifetracker-v8';
 const BASE = '/Lifetracker/';
 
 const PRECACHE_URLS = [

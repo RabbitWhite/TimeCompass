@@ -62,7 +62,7 @@ cp src/App.css dist/
 
 # 5. Generate sw.js with correct precache list (replaces the Vite placeholder version)
 cat > dist/sw.js << 'SWEOF'
-const CACHE_NAME = 'lifetracker-v8';
+const CACHE_NAME = 'lifetracker-v9';
 const BASE = '/Lifetracker/';
 
 const PRECACHE_URLS = [
@@ -87,6 +87,9 @@ const PRECACHE_URLS = [
   BASE + 'manifest.json',
 ];
 
+// CDN origins whose responses should also be cached for offline use
+const CDN_ORIGINS = ['https://esm.sh'];
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS))
@@ -105,11 +108,37 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
+
+  // Cache CDN library files (React, react-dom, react-router-dom) after first load
+  // so the app works fully offline on subsequent visits.
+  if (CDN_ORIGINS.some((origin) => event.request.url.startsWith(origin))) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        if (cached) return cached;
+        return fetch(event.request).then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        });
+      })
+    );
+    return;
+  }
+
   if (url.origin !== self.location.origin) return;
+
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
+          // GitHub Pages returns a 404 HTML page when the repo is private.
+          // A 404 is a successful HTTP response, so .catch() never fires —
+          // we must explicitly check response.ok and fall back to the cached app.
+          if (!response.ok) {
+            return caches.match(BASE + 'index.html');
+          }
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
           return response;
@@ -118,6 +147,7 @@ self.addEventListener('fetch', (event) => {
     );
     return;
   }
+
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;

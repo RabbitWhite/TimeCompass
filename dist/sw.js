@@ -1,9 +1,27 @@
-const CACHE_NAME = 'lifetracker-v4';
+const CACHE_NAME = 'lifetracker-v5';
 const BASE = '/Lifetracker/';
 
-// This placeholder is replaced at build time by generate-sw-manifest.js
-// with the actual list of all files in dist/
-const PRECACHE_URLS = '__PRECACHE_MANIFEST__';
+const PRECACHE_URLS = [
+  BASE + 'index.html',
+  BASE + 'App.css',
+  BASE + 'main.js',
+  BASE + 'App.js',
+  BASE + 'store.js',
+  BASE + 'utils.js',
+  BASE + 'types.js',
+  BASE + 'components/BottomNav.js',
+  BASE + 'components/Modal.js',
+  BASE + 'components/SplashScreen.js',
+  BASE + 'pages/Dashboard.js',
+  BASE + 'pages/FocusAreaDetail.js',
+  BASE + 'pages/FocusAreas.js',
+  BASE + 'pages/Gamification.js',
+  BASE + 'pages/Statistics.js',
+  BASE + 'pages/Timeline.js',
+  BASE + 'pages/Tracking.js',
+  BASE + 'pages/WeekTemplates.js',
+  BASE + 'manifest.json',
+];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -23,11 +41,7 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
-
-  // Only handle same-origin requests
   if (url.origin !== self.location.origin) return;
-
-  // Navigation requests: try network, fall back to cached index.html
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request)
@@ -40,8 +54,6 @@ self.addEventListener('fetch', (event) => {
     );
     return;
   }
-
-  // All other requests: cache-first, then network (and cache the response)
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lifetracker-v5';
+const CACHE_NAME = 'lifetracker-v6';
 const BASE = '/Lifetracker/';
 
 const PRECACHE_URLS = [

@@ -56,16 +56,18 @@ PYEOF
 # 3. Copy static assets from public/
 echo "Copying static assets..."
 cp public/* dist/ 2>/dev/null || true
+touch dist/.nojekyll  # Prevents GitHub Pages from running Jekyll on the static files
 
 # 4. Copy CSS
 cp src/App.css dist/
 
 # 5. Generate sw.js with correct precache list (replaces the Vite placeholder version)
 cat > dist/sw.js << 'SWEOF'
-const CACHE_NAME = 'lifetracker-v10';
+const CACHE_NAME = 'lifetracker-v11';
 const BASE = '/Lifetracker/';
 
-const PRECACHE_URLS = [
+// Critical files: if any of these fail to cache, the SW install fails (app won't work)
+const CRITICAL_URLS = [
   BASE + 'index.html',
   BASE + 'App.css',
   BASE + 'main.js',
@@ -85,7 +87,10 @@ const PRECACHE_URLS = [
   BASE + 'pages/Tracking.js',
   BASE + 'pages/WeekTemplates.js',
   BASE + 'manifest.json',
-  // Images — must be precached so they work offline and survive cache eviction
+];
+
+// Optional files: cached best-effort; a failure here does NOT abort SW install
+const OPTIONAL_URLS = [
   BASE + 'background.png',
   BASE + 'cover.png',
   BASE + 'app-icon.png',
@@ -102,7 +107,19 @@ const CDN_ORIGINS = ['https://esm.sh'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS))
+    caches.open(CACHE_NAME).then((cache) =>
+      // Cache critical files (throws on failure → SW install aborts)
+      cache.addAll(CRITICAL_URLS).then(() =>
+        // Cache images best-effort — individual failures are swallowed
+        Promise.all(
+          OPTIONAL_URLS.map((url) =>
+            fetch(url)
+              .then((resp) => (resp.ok ? cache.put(url, resp) : null))
+              .catch(() => null)
+          )
+        )
+      )
+    )
   );
   self.skipWaiting();
 });
@@ -144,16 +161,20 @@ self.addEventListener('fetch', (event) => {
       fetch(event.request)
         .then((response) => {
           // GitHub Pages returns a 404 HTML page when the repo is private.
-          // A 404 is a successful HTTP response, so .catch() never fires —
-          // we must explicitly check response.ok and fall back to the cached app.
+          // A 404 is a successful HTTP response so .catch() never fires —
+          // explicitly check response.ok and fall back to the cached app.
           if (!response.ok) {
-            return caches.match(BASE + 'index.html');
+            return caches.match(BASE + 'index.html').then(
+              (cached) => cached || response  // return error response if nothing cached yet
+            );
           }
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
           return response;
         })
-        .catch(() => caches.match(BASE + 'index.html'))
+        .catch(() =>
+          caches.match(BASE + 'index.html').then((cached) => cached || new Response('Offline', { status: 503 }))
+        )
     );
     return;
   }

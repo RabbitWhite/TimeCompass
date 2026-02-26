@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lifetracker-v9';
+const CACHE_NAME = 'lifetracker-v10';
 const BASE = '/Lifetracker/';
 
 const PRECACHE_URLS = [
@@ -21,6 +21,16 @@ const PRECACHE_URLS = [
   BASE + 'pages/Tracking.js',
   BASE + 'pages/WeekTemplates.js',
   BASE + 'manifest.json',
+  // Images — must be precached so they work offline and survive cache eviction
+  BASE + 'background.png',
+  BASE + 'cover.png',
+  BASE + 'app-icon.png',
+  BASE + 'icon-192x192.png',
+  BASE + 'icon-192x192-maskable.png',
+  BASE + 'icon-512x512.png',
+  BASE + 'icon-512x512-maskable.png',
+  BASE + 'icon-180x180.png',
+  BASE + 'icon-180x180-maskable.png',
 ];
 
 // CDN origins whose responses should also be cached for offline use

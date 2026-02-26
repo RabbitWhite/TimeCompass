@@ -2,7 +2,11 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main, claude/lifetracker-mobile-app-xnOiw, claude/fix-mobile-syncing-a0x4o]
+    # Only deploy from the active development branch (dist/ must be committed).
+    # The laptop session branch (claude/lifetracker-mobile-app-xnOiw) uses a Vite
+    # build and has no dist/ — deploying from it would cause a CI failure and
+    # potentially overwrite the live site with an older build.
+    branches: [main, claude/fix-mobile-syncing-a0x4o]
   workflow_dispatch:
 
 permissions:

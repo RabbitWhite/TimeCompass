@@ -2,36 +2,35 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    # Only deploy from the active development branch (dist/ must be committed).
-    # The laptop session branch (claude/lifetracker-mobile-app-xnOiw) uses a Vite
-    # build and has no dist/ — deploying from it would cause a CI failure and
-    # potentially overwrite the live site with an older build.
-    branches: [main, claude/fix-mobile-syncing-a0x4o]
+    branches: [claude/fix-mobile-syncing-a0x4o]
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
 
 concurrency:
   group: pages
   cancel-in-progress: true
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
-      # The dist/ folder is pre-built locally via build-cdn.sh (uses tsc, no npm registry needed).
-      # Just deploy it to gh-pages.
-      - name: Deploy to gh-pages branch
-        run: |
-          cd dist
-          git init
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .
-          git commit -m "deploy: ${{ github.sha }}"
-          git push --force \
-            "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" \
-            HEAD:gh-pages
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

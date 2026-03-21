@@ -55,7 +55,7 @@ export default function WeekTemplates() {
     const targets = buildInitialTargets(state.focusAreas, state.projects);
     setTTargets(targets);
     // Auto-expand areas that have projects so users can set project-level hours
-    const withProjects = new Set(
+    const withProjects = new Set<string>(
       state.focusAreas
         .filter(a => state.projects.some(p => p.focusAreaId === a.id))
         .map(a => a.id)
@@ -70,7 +70,7 @@ export default function WeekTemplates() {
     setTDescription(template.description);
     const targets = buildInitialTargets(state.focusAreas, state.projects, template);
     setTTargets(targets);
-    const withProjects = new Set(
+    const withProjects = new Set<string>(
       state.focusAreas
         .filter(a => state.projects.some(p => p.focusAreaId === a.id))
         .map(a => a.id)

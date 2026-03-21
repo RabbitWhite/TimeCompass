@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useApp } from '../store';
 import Modal from '../components/Modal';
 import { generateId, formatDuration, isThisWeek, getWeekStart, formatDate, formatTime } from '../utils';
@@ -7,7 +6,6 @@ import type { TimeEntry, FocusArea } from '../types';
 
 export default function Tracking() {
   const { state, dispatch } = useApp();
-  const navigate = useNavigate();
   const [elapsed, setElapsed] = useState(0);
   const [showManual, setShowManual] = useState(false);
   const [showAllocation, setShowAllocation] = useState(false);
@@ -37,8 +35,6 @@ export default function Tracking() {
   const activeArea = state.activeTracking
     ? state.focusAreas.find(a => a.id === state.activeTracking!.focusAreaId)
     : null;
-
-  const isStaleSession = elapsed > 8 * 3600; // tracking open for more than 8 hours
 
   const startTracking = (areaId: string) => {
     if (state.activeTracking) stopTracking();
@@ -143,11 +139,6 @@ export default function Tracking() {
             </select>
           )}
           <div className="tracking-time">{formatElapsed(elapsed)}</div>
-          {isStaleSession && (
-            <div className="tracking-stale-warning">
-              Session running for a long time — did you forget to stop?
-            </div>
-          )}
           <button className="btn" onClick={stopTracking}>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
               <path d="M6 6h12v12H6z" />
@@ -187,16 +178,7 @@ export default function Tracking() {
 
       <div className="section-header">
         <span className="section-title">Weekly Allocation</span>
-        <div style={{ display: 'flex', gap: 6 }}>
-          <button className="btn btn-ghost btn-sm" onClick={() => navigate('/templates')}
-            title="Week Templates" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
-              <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zm-5 8v-2h8v2H8zm0-4v-2h8v2H8zm0-4V7h3v2H8z"/>
-            </svg>
-            Templates
-          </button>
-          <button className="btn btn-secondary btn-sm" onClick={openAllocation}>Edit</button>
-        </div>
+        <button className="btn btn-secondary btn-sm" onClick={openAllocation}>Edit</button>
       </div>
       {state.focusAreas.map(area => {
         const weekMins = weekEntries

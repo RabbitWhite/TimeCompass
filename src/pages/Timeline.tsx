@@ -96,6 +96,12 @@ export default function Timeline() {
             `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
+          if (res.status === 401) {
+            dispatch({ type: 'UPDATE_SETTINGS', payload: { googleAccessToken: '', googleCalendarConnected: false } });
+            setShowSync(false);
+            alert('Google Calendar session expired — reconnect in Settings');
+            return;
+          }
           const data = await res.json();
           if (data.items) {
             const events: CalendarEvent[] = data.items.map((item: any) => ({

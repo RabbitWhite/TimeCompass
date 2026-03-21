@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main, claude/lifetracker-mobile-app-xnOiw]
+    branches: [Main, claude/lifetracker-mobile-app-xnOiw]
   workflow_dispatch:
 
 permissions:

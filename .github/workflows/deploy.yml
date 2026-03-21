@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [claude/fix-mobile-syncing-a0x4o]
+    branches: [main]
   workflow_dispatch:
 
 permissions:

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lifetracker-v4';
+const CACHE_NAME = 'lifetracker-v3';
 const BASE = '/Lifetracker/';
 
 // This placeholder is replaced at build time by generate-sw-manifest.js

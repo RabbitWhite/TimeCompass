@@ -1,6 +1,5 @@
 node_modules
-# dist is intentionally tracked — built via build-cdn.sh using tsc directly
-# (npm registry unavailable in CI environment)
+dist
 .env
 .env.local
 *.log

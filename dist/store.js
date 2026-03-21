@@ -1,0 +1,127 @@
+import { jsx as _jsx } from "react/jsx-runtime";
+import { createContext, useContext, useReducer, useEffect } from 'react';
+const STORAGE_KEY = 'lifetracker-state';
+const defaultState = {
+    focusAreas: [],
+    projects: [],
+    timeEntries: [],
+    calendarEvents: [],
+    activeTracking: null,
+    settings: {
+        timeWindowDays: 7,
+        googleCalendarConnected: false,
+        googleAccessToken: '',
+        googleClientId: '',
+        gamification: {
+            pointsPerTargetHour: 10,
+            balanceBasePoints: 20,
+            streakBonusPoints: 15,
+            enabled: true,
+        },
+    },
+    weeklyScores: [],
+};
+function loadState() {
+    try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+            const parsed = JSON.parse(stored);
+            return {
+                ...defaultState,
+                ...parsed,
+                settings: {
+                    ...defaultState.settings,
+                    ...parsed.settings,
+                    gamification: { ...defaultState.settings.gamification, ...parsed.settings?.gamification },
+                },
+                weeklyScores: parsed.weeklyScores || [],
+            };
+        }
+    }
+    catch { /* ignore */ }
+    return defaultState;
+}
+function saveState(state) {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+    catch { /* ignore */ }
+}
+function reducer(state, action) {
+    switch (action.type) {
+        case 'ADD_FOCUS_AREA':
+            return { ...state, focusAreas: [...state.focusAreas, action.payload] };
+        case 'UPDATE_FOCUS_AREA':
+            return { ...state, focusAreas: state.focusAreas.map(a => a.id === action.payload.id ? action.payload : a) };
+        case 'DELETE_FOCUS_AREA':
+            return {
+                ...state,
+                focusAreas: state.focusAreas.filter(a => a.id !== action.payload),
+                projects: state.projects.filter(p => p.focusAreaId !== action.payload),
+                timeEntries: state.timeEntries.filter(t => t.focusAreaId !== action.payload),
+            };
+        case 'ADD_PROJECT':
+            return { ...state, projects: [...state.projects, action.payload] };
+        case 'UPDATE_PROJECT':
+            return { ...state, projects: state.projects.map(p => p.id === action.payload.id ? action.payload : p) };
+        case 'DELETE_PROJECT':
+            return { ...state, projects: state.projects.filter(p => p.id !== action.payload) };
+        case 'ADD_TIME_ENTRY':
+            return { ...state, timeEntries: [...state.timeEntries, action.payload] };
+        case 'UPDATE_TIME_ENTRY':
+            return { ...state, timeEntries: state.timeEntries.map(t => t.id === action.payload.id ? action.payload : t) };
+        case 'DELETE_TIME_ENTRY':
+            return { ...state, timeEntries: state.timeEntries.filter(t => t.id !== action.payload) };
+        case 'SET_CALENDAR_EVENTS':
+            return { ...state, calendarEvents: action.payload };
+        case 'ADD_CALENDAR_EVENT':
+            return { ...state, calendarEvents: [...state.calendarEvents, action.payload] };
+        case 'DELETE_CALENDAR_EVENT':
+            return { ...state, calendarEvents: state.calendarEvents.filter(e => e.id !== action.payload) };
+        case 'START_TRACKING':
+            return { ...state, activeTracking: action.payload };
+        case 'STOP_TRACKING':
+            return { ...state, activeTracking: null };
+        case 'UPDATE_SETTINGS':
+            return { ...state, settings: { ...state.settings, ...action.payload } };
+        case 'UPDATE_GAMIFICATION_SETTINGS':
+            return {
+                ...state,
+                settings: {
+                    ...state.settings,
+                    gamification: { ...state.settings.gamification, ...action.payload },
+                },
+            };
+        case 'SAVE_WEEKLY_SCORE': {
+            const existing = state.weeklyScores.findIndex(s => s.weekStart === action.payload.weekStart);
+            const scores = [...state.weeklyScores];
+            if (existing >= 0) {
+                scores[existing] = action.payload;
+            }
+            else {
+                scores.push(action.payload);
+            }
+            // Keep only last 52 weeks
+            scores.sort((a, b) => new Date(b.weekStart).getTime() - new Date(a.weekStart).getTime());
+            return { ...state, weeklyScores: scores.slice(0, 52) };
+        }
+        case 'LOAD_STATE':
+            return action.payload;
+        default:
+            return state;
+    }
+}
+const AppContext = createContext(null);
+export function AppProvider({ children }) {
+    const [state, dispatch] = useReducer(reducer, null, loadState);
+    useEffect(() => {
+        saveState(state);
+    }, [state]);
+    return (_jsx(AppContext.Provider, { value: { state, dispatch }, children: children }));
+}
+export function useApp() {
+    const ctx = useContext(AppContext);
+    if (!ctx)
+        throw new Error('useApp must be used within AppProvider');
+    return ctx;
+}

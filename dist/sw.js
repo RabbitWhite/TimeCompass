@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lifetracker-18504ca';
+const CACHE_NAME = 'lifetracker-2b02c45';
 const BASE = '/Lifetracker/';
 
 // Critical files: if any of these fail to cache, the SW install fails (app won't work)

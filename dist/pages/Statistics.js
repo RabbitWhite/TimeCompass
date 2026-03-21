@@ -140,19 +140,23 @@ export default function Statistics() {
                                                 minWidth: targetMins > 0 ? 4 : 0,
                                             } })] })] }, area.id));
                     }), _jsxs("div", { className: "chart-legend mt-8", children: [_jsxs("div", { className: "legend-item", children: [_jsx("span", { className: "legend-dot", style: { background: 'var(--primary)' } }), " Actual"] }), _jsxs("div", { className: "legend-item", children: [_jsx("span", { className: "legend-dot", style: { background: 'var(--primary)', opacity: 0.25 } }), " Target"] })] })] })), dailyData.length > 0 && dailyData.some(d => d.total > 0) && (_jsxs("div", { className: "chart-container", children: [_jsx("div", { className: "chart-title", children: "Daily Activity" }), _jsx("div", { style: { display: 'flex', alignItems: 'flex-end', gap: 2, height: 120, padding: '8px 0' }, children: dailyData.map(({ date, total }) => {
-                            const height = maxDaily > 0 ? (total / maxDaily) * 100 : 0;
+                            const maxBarPx = 90;
+                            const barPx = maxDaily > 0 ? Math.round((total / maxDaily) * maxBarPx) : 0;
+                            const finalPx = total > 0 ? Math.max(barPx, 4) : 0;
                             const isToday = isSameDay(date, new Date());
                             return (_jsxs("div", { style: {
                                     flex: 1,
                                     display: 'flex',
                                     flexDirection: 'column',
+                                    justifyContent: 'flex-end',
                                     alignItems: 'center',
                                     gap: 4,
+                                    height: maxBarPx + 20,
                                 }, children: [_jsx("div", { style: {
                                             width: '100%',
                                             maxWidth: 32,
-                                            height: `${Math.max(height, total > 0 ? 4 : 0)}%`,
-                                            background: isToday ? 'var(--primary)' : 'var(--surface-elevated)',
+                                            height: finalPx,
+                                            background: isToday ? 'var(--primary)' : 'rgba(108, 99, 255, 0.35)',
                                             borderRadius: 3,
                                             transition: 'height 0.3s',
                                         }, title: `${formatDate(date.toISOString())}: ${formatDuration(total)}` }), _jsx("span", { style: { fontSize: 9, color: isToday ? 'var(--primary)' : 'var(--text-muted)' }, children: date.toLocaleDateString('en', { weekday: 'narrow' }) })] }, date.toISOString()));

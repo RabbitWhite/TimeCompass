@@ -6,7 +6,19 @@ import App from './App';
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register(import.meta.env.BASE_URL + 'sw.js');
+    navigator.serviceWorker.register(import.meta.env.BASE_URL + 'sw.js')
+      .then((registration) => {
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          if (!newWorker) return;
+          newWorker.addEventListener('statechange', () => {
+            // New SW installed and waiting to take over
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              window.dispatchEvent(new CustomEvent('sw-update-ready'));
+            }
+          });
+        });
+      });
   });
 }
 

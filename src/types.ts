@@ -17,6 +17,27 @@ export interface Project {
   trelloUrl: string;
   status: 'active' | 'paused' | 'completed';
   createdAt: string;
+  weeklyTargetHours?: number;
+}
+
+export interface TemplateProjectTarget {
+  projectId: string;
+  weeklyTargetHours: number;
+}
+
+export interface TemplateFocusAreaTarget {
+  focusAreaId: string;
+  weeklyTargetHours: number;
+  projectTargets: TemplateProjectTarget[];
+}
+
+export interface WeekTemplate {
+  id: string;
+  name: string;
+  description: string;
+  focusAreaTargets: TemplateFocusAreaTarget[];
+  createdAt: string;
+  lastUsedAt?: string;
 }
 
 export interface TimeEntry {
@@ -51,6 +72,7 @@ export interface GamificationSettings {
   balanceBasePoints: number;     // base points for perfect balance across all areas
   streakBonusPoints: number;     // bonus points per consecutive week of all-targets-met
   enabled: boolean;
+  monthlyRewardBudget: number;   // euros per 4-week period, 0 = disabled
 }
 
 export interface WeeklyScore {
@@ -88,6 +110,7 @@ export interface AppState {
   activeTracking: ActiveTracking | null;
   settings: AppSettings;
   weeklyScores: WeeklyScore[];
+  weekTemplates: WeekTemplate[];
 }
 
 export type AppAction =
@@ -108,7 +131,11 @@ export type AppAction =
   | { type: 'UPDATE_SETTINGS'; payload: Partial<AppSettings> }
   | { type: 'UPDATE_GAMIFICATION_SETTINGS'; payload: Partial<GamificationSettings> }
   | { type: 'SAVE_WEEKLY_SCORE'; payload: WeeklyScore }
-  | { type: 'LOAD_STATE'; payload: AppState };
+  | { type: 'LOAD_STATE'; payload: AppState }
+  | { type: 'ADD_WEEK_TEMPLATE'; payload: WeekTemplate }
+  | { type: 'UPDATE_WEEK_TEMPLATE'; payload: WeekTemplate }
+  | { type: 'DELETE_WEEK_TEMPLATE'; payload: string }
+  | { type: 'APPLY_WEEK_TEMPLATE'; payload: string };
 
 export const AREA_ICONS = [
   'code', 'camera', 'book', 'music', 'brush', 'fitness',

@@ -1,10 +1,12 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../store.js';
 import Modal from '../components/Modal.js';
 import { generateId, formatDuration, isThisWeek, formatTime } from '../utils.js';
 export default function Tracking() {
     const { state, dispatch } = useApp();
+    const navigate = useNavigate();
     const [elapsed, setElapsed] = useState(0);
     const [showManual, setShowManual] = useState(false);
     const [showAllocation, setShowAllocation] = useState(false);
@@ -33,6 +35,7 @@ export default function Tracking() {
     const activeArea = state.activeTracking
         ? state.focusAreas.find(a => a.id === state.activeTracking.focusAreaId)
         : null;
+    const isStaleSession = elapsed > 8 * 3600; // tracking open for more than 8 hours
     const startTracking = (areaId) => {
         if (state.activeTracking)
             stopTracking();
@@ -114,7 +117,7 @@ export default function Tracking() {
                             payload: { ...state.activeTracking, projectId: e.target.value },
                         }), children: [_jsx("option", { value: "", children: "No realization" }), state.projects
                                 .filter(p => p.focusAreaId === activeArea.id)
-                                .map(p => _jsx("option", { value: p.id, children: p.name }, p.id))] })), _jsx("div", { className: "tracking-time", children: formatElapsed(elapsed) }), _jsxs("button", { className: "btn", onClick: stopTracking, children: [_jsx("svg", { viewBox: "0 0 24 24", width: "16", height: "16", fill: "currentColor", children: _jsx("path", { d: "M6 6h12v12H6z" }) }), "Stop"] })] })) : (_jsxs("div", { className: "tracker-banner", children: [_jsx("div", { className: "tracking-label", children: "Ready to track" }), _jsx("div", { className: "tracking-area", style: { fontSize: 16, opacity: 0.8 }, children: "Select a focus area below to start" })] })), _jsx("div", { className: "section-header", children: _jsx("span", { className: "section-title", children: "Quick Start" }) }), _jsx("div", { className: "quick-buttons", children: state.focusAreas.map(area => (_jsxs("button", { className: "quick-btn", onClick: () => startTracking(area.id), style: state.activeTracking?.focusAreaId === area.id ? { borderColor: area.color, background: `${area.color}15` } : {}, children: [_jsx("span", { className: "area-dot", style: { background: area.color } }), _jsx("span", { className: "truncate", children: area.name })] }, area.id))) }), state.focusAreas.length === 0 && (_jsx("div", { className: "text-secondary text-sm", style: { textAlign: 'center', padding: 16 }, children: "Add focus areas first to start tracking." })), _jsxs("div", { className: "section-header", children: [_jsx("span", { className: "section-title", children: "Weekly Allocation" }), _jsx("button", { className: "btn btn-secondary btn-sm", onClick: openAllocation, children: "Edit" })] }), state.focusAreas.map(area => {
+                                .map(p => _jsx("option", { value: p.id, children: p.name }, p.id))] })), _jsx("div", { className: "tracking-time", children: formatElapsed(elapsed) }), isStaleSession && (_jsx("div", { className: "tracking-stale-warning", children: "Session running for a long time \u2014 did you forget to stop?" })), _jsxs("button", { className: "btn", onClick: stopTracking, children: [_jsx("svg", { viewBox: "0 0 24 24", width: "16", height: "16", fill: "currentColor", children: _jsx("path", { d: "M6 6h12v12H6z" }) }), "Stop"] })] })) : (_jsxs("div", { className: "tracker-banner", children: [_jsx("div", { className: "tracking-label", children: "Ready to track" }), _jsx("div", { className: "tracking-area", style: { fontSize: 16, opacity: 0.8 }, children: "Select a focus area below to start" })] })), _jsx("div", { className: "section-header", children: _jsx("span", { className: "section-title", children: "Quick Start" }) }), _jsx("div", { className: "quick-buttons", children: state.focusAreas.map(area => (_jsxs("button", { className: "quick-btn", onClick: () => startTracking(area.id), style: state.activeTracking?.focusAreaId === area.id ? { borderColor: area.color, background: `${area.color}15` } : {}, children: [_jsx("span", { className: "area-dot", style: { background: area.color } }), _jsx("span", { className: "truncate", children: area.name })] }, area.id))) }), state.focusAreas.length === 0 && (_jsx("div", { className: "text-secondary text-sm", style: { textAlign: 'center', padding: 16 }, children: "Add focus areas first to start tracking." })), _jsxs("div", { className: "section-header", children: [_jsx("span", { className: "section-title", children: "Weekly Allocation" }), _jsxs("div", { style: { display: 'flex', gap: 6 }, children: [_jsxs("button", { className: "btn btn-ghost btn-sm", onClick: () => navigate('/templates'), title: "Week Templates", style: { display: 'flex', alignItems: 'center', gap: 4 }, children: [_jsx("svg", { viewBox: "0 0 24 24", width: "15", height: "15", fill: "currentColor", children: _jsx("path", { d: "M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zm-5 8v-2h8v2H8zm0-4v-2h8v2H8zm0-4V7h3v2H8z" }) }), "Templates"] }), _jsx("button", { className: "btn btn-secondary btn-sm", onClick: openAllocation, children: "Edit" })] })] }), state.focusAreas.map(area => {
                 const weekMins = weekEntries
                     .filter(e => e.focusAreaId === area.id)
                     .reduce((s, e) => s + e.duration, 0);

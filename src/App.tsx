@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import BottomNav from './components/BottomNav';
 import Dashboard from './pages/Dashboard';
@@ -8,14 +8,23 @@ import Timeline from './pages/Timeline';
 import Tracking from './pages/Tracking';
 import Statistics from './pages/Statistics';
 import Gamification from './pages/Gamification';
+import WeekTemplates from './pages/WeekTemplates';
 import Modal from './components/Modal';
+import SplashScreen from './components/SplashScreen';
 import { useApp } from './store';
 import './App.css';
 
 export default function App() {
   const { state, dispatch } = useApp();
   const [showData, setShowData] = useState(false);
+  const [swUpdateReady, setSwUpdateReady] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handler = () => setSwUpdateReady(true);
+    window.addEventListener('sw-update-ready', handler);
+    return () => window.removeEventListener('sw-update-ready', handler);
+  }, []);
 
   const exportData = () => {
     const json = JSON.stringify(state, null, 2);
@@ -46,6 +55,8 @@ export default function App() {
   };
 
   return (
+    <>
+    <SplashScreen />
     <div className="app-layout">
       <header className="app-header">
         <h1>LifeTracker</h1>
@@ -57,6 +68,14 @@ export default function App() {
           </button>
         </div>
       </header>
+      {swUpdateReady && (
+        <div className="update-banner">
+          <span>New version available</span>
+          <button className="btn btn-sm" onClick={() => window.location.reload()}>
+            Update
+          </button>
+        </div>
+      )}
       <main className="app-content">
         <Routes>
           <Route path="/" element={<Dashboard />} />
@@ -66,6 +85,7 @@ export default function App() {
           <Route path="/track" element={<Tracking />} />
           <Route path="/stats" element={<Statistics />} />
           <Route path="/gamification" element={<Gamification />} />
+          <Route path="/templates" element={<WeekTemplates />} />
         </Routes>
       </main>
       <BottomNav />
@@ -100,5 +120,6 @@ export default function App() {
         </Modal>
       )}
     </div>
+    </>
   );
 }

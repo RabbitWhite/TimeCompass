@@ -37,8 +37,10 @@ export default function FocusAreas() {
     const save = () => {
         if (!name.trim())
             return;
+        const isNew = !editing;
+        const areaId = editing?.id || generateId();
         const area = {
-            id: editing?.id || generateId(),
+            id: areaId,
             name: name.trim(),
             description: description.trim(),
             color,
@@ -46,7 +48,22 @@ export default function FocusAreas() {
             weeklyTargetHours: parseFloat(targetHours) || 0,
             createdAt: editing?.createdAt || new Date().toISOString(),
         };
-        dispatch({ type: editing ? 'UPDATE_FOCUS_AREA' : 'ADD_FOCUS_AREA', payload: area });
+        dispatch({ type: isNew ? 'ADD_FOCUS_AREA' : 'UPDATE_FOCUS_AREA', payload: area });
+        if (isNew) {
+            dispatch({
+                type: 'ADD_PROJECT',
+                payload: {
+                    id: generateId(),
+                    focusAreaId: areaId,
+                    name: 'Default',
+                    description: '',
+                    githubUrl: '',
+                    trelloUrl: '',
+                    status: 'active',
+                    createdAt: new Date().toISOString(),
+                },
+            });
+        }
         setShowForm(false);
     };
     return (_jsxs("div", { children: [_jsxs("div", { className: "section-header", children: [_jsx("span", { className: "section-title", children: "Focus Areas" }), _jsxs("span", { className: "text-secondary text-sm", children: [state.focusAreas.length, " areas"] })] }), state.focusAreas.map(area => {

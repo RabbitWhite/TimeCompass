@@ -180,6 +180,25 @@ export function getWeekWithinPeriod(weekStart, periodIndex) {
     const periodNoon = Date.UTC(periodStartDate.getUTCFullYear(), periodStartDate.getUTCMonth(), periodStartDate.getUTCDate(), 12);
     return Math.min(4, Math.max(1, Math.floor((weekNoon - periodNoon) / WEEK_MS) + 1));
 }
+/** Returns the n focus areas with the lowest percentage of current-period target
+ *  achieved, along with each area's time gap behind the full 4-week target. */
+export function getCatchUpAreas(focusAreas, timeEntries, settings, n) {
+    const periodIdx = getPeriodIndex(getWeekStart());
+    const { start: periodStart, end: periodEnd } = getPeriodDateRange(periodIdx);
+    const ranked = focusAreas
+        .filter(a => a.weeklyTargetHours > 0)
+        .map(area => {
+        const periodTargetMinutes = area.weeklyTargetHours * 4 * 60;
+        const actualMinutes = timeEntries
+            .filter(e => e.focusAreaId === area.id && new Date(e.startTime) >= periodStart && new Date(e.startTime) <= periodEnd)
+            .reduce((s, e) => s + e.duration, 0);
+        const pct = actualMinutes / periodTargetMinutes;
+        const gapMinutes = Math.max(0, periodTargetMinutes - actualMinutes);
+        return { area, pct, gapMinutes };
+    });
+    ranked.sort((a, b) => a.pct - b.pct);
+    return ranked.slice(0, n).map(({ area, gapMinutes }) => ({ area, gapMinutes }));
+}
 /** Max achievable points for a week given current settings (excluding streak bonus). */
 export function computeMaxWeekPoints(focusAreas, settings) {
     const areas = focusAreas.filter(a => a.weeklyTargetHours > 0);

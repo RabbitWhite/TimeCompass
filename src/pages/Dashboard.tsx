@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../store';
-import { formatDuration, isThisWeek, getWeekStart, formatTime, formatDate, calculateWeeklyScore, getPeriodIndex, getPeriodDateRange, computeMaxWeekPoints, pointsToEuros, formatEuros } from '../utils';
+import { formatDuration, getWeekStart, calculateWeeklyScore, getPeriodIndex, getPeriodDateRange, computeMaxWeekPoints, pointsToEuros, formatEuros } from '../utils';
 
 export default function Dashboard() {
   const { state } = useApp();
@@ -19,31 +19,9 @@ export default function Dashboard() {
     return () => clearInterval(id);
   }, [state.activeTracking]);
 
-  const weekEntries = state.timeEntries.filter(e => isThisWeek(e.startTime));
-  const totalMinutes = weekEntries.reduce((s, e) => s + e.duration, 0);
-  const todayEntries = weekEntries.filter(e => {
-    const d = new Date(e.startTime);
-    const now = new Date();
-    return d.toDateString() === now.toDateString();
-  });
-  const todayMinutes = todayEntries.reduce((s, e) => s + e.duration, 0);
-  const totalTarget = state.focusAreas.reduce((s, a) => s + a.weeklyTargetHours, 0);
-
   const activeArea = state.activeTracking
     ? state.focusAreas.find(a => a.id === state.activeTracking!.focusAreaId)
     : null;
-
-  const upcomingEvents = state.calendarEvents
-    .filter(e => new Date(e.start) > new Date())
-    .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
-    .slice(0, 3);
-
-  const areaHours = state.focusAreas.map(area => {
-    const mins = weekEntries
-      .filter(e => e.focusAreaId === area.id)
-      .reduce((s, e) => s + e.duration, 0);
-    return { area, mins, target: area.weeklyTargetHours * 60 };
-  });
 
   // Gamification
   const gamSettings = state.settings.gamification;
@@ -76,8 +54,18 @@ export default function Dashboard() {
     })
     .reduce((s, sc) => s + sc.totalPoints, 0) + currentScore.totalPoints;
   const currentPeriodEuros = pointsToEuros(currentPeriodPoints, maxWeekPts, gamSettings.monthlyRewardBudget);
-  const { start: periodStart } = getPeriodDateRange(currentPeriodIdx);
+  const { start: periodStart, end: pEnd } = getPeriodDateRange(currentPeriodIdx);
   const budget = gamSettings.monthlyRewardBudget;
+
+  // Period progress
+  const periodActualMinutes = state.timeEntries
+    .filter(e => {
+      const d = new Date(e.startTime);
+      return d >= periodStart && d <= pEnd;
+    })
+    .reduce((s, e) => s + e.duration, 0);
+  const periodTargetMinutes = state.focusAreas.reduce((s, a) => s + a.weeklyTargetHours * 4 * 60, 0);
+  const periodPct = periodTargetMinutes > 0 ? Math.min(1, periodActualMinutes / periodTargetMinutes) : 0;
 
   return (
     <div>
@@ -97,23 +85,8 @@ export default function Dashboard() {
         </div>
       )}
 
-      <div className="dash-summary">
-        <div className="dash-stat">
-          <div className="value">{formatDuration(todayMinutes)}</div>
-          <div className="label">Today</div>
-        </div>
-        <div className="dash-stat">
-          <div className="value">{formatDuration(totalMinutes)}</div>
-          <div className="label">This Week</div>
-        </div>
-        <div className="dash-stat">
-          <div className="value">{totalTarget}h</div>
-          <div className="label">Target</div>
-        </div>
-      </div>
-
       {gamSettings.enabled && (
-        <div className="dash-points-card" onClick={() => navigate('/gamification')}>
+        <div className="dash-points-card">
           <div className="dash-points-left">
             <svg viewBox="0 0 24 24" width="28" height="28" fill="var(--warning)">
               <path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94A5.01 5.01 0 0 0 11 17.9V20H7v2h10v-2h-4v-2.1a5.01 5.01 0 0 0 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z" />
@@ -143,64 +116,20 @@ export default function Dashboard() {
         </div>
       )}
 
-      {areaHours.length > 0 && (
-        <>
-          <div className="section-header">
-            <span className="section-title">Weekly Progress</span>
-          </div>
-          {areaHours.map(({ area, mins, target }) => (
-            <div className="allocation-bar" key={area.id}>
-              <div className="allocation-header">
-                <div className="allocation-name">
-                  <span className="dot" style={{ background: area.color }} />
-                  {area.name}
-                </div>
-                <span className="allocation-hours">
-                  {formatDuration(mins)} / {area.weeklyTargetHours}h
-                </span>
-              </div>
-              <div className="bar-track">
-                <div
-                  className="bar-fill"
-                  style={{
-                    width: `${Math.min(100, target > 0 ? (mins / target) * 100 : 0)}%`,
-                    background: area.color,
-                  }}
-                />
-                {target > 0 && (
-                  <div className="bar-target" style={{ left: '100%' }} />
-                )}
-              </div>
-            </div>
-          ))}
-        </>
-      )}
-
-      {upcomingEvents.length > 0 && (
+      {periodTargetMinutes > 0 && (
         <>
           <div className="section-header mt-16">
-            <span className="section-title">Upcoming</span>
-            <button className="btn btn-ghost btn-sm" onClick={() => navigate('/timeline')}>View all</button>
+            <span className="section-title">Period Progress</span>
           </div>
-          {upcomingEvents.map(event => {
-            const linkedArea = state.focusAreas.find(a => a.id === event.focusAreaId);
-            return (
-              <div className="event-card" key={event.id}>
-                <span className="event-time">{formatTime(event.start)}</span>
-                <span
-                  className="event-dot"
-                  style={{ background: linkedArea?.color || 'var(--text-muted)' }}
-                />
-                <div className="event-info">
-                  <div className="event-title truncate">{event.title}</div>
-                  <div className="event-desc">
-                    {formatDate(event.start)}
-                    {linkedArea && ` \u2022 ${linkedArea.name}`}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+          <div className="allocation-bar">
+            <div className="allocation-header">
+              <span className="allocation-hours">{formatDuration(periodActualMinutes)}</span>
+              <span className="allocation-hours">{formatDuration(periodTargetMinutes)}</span>
+            </div>
+            <div className="bar-track">
+              <div className="bar-fill" style={{ width: `${periodPct * 100}%`, background: 'var(--primary)' }} />
+            </div>
+          </div>
         </>
       )}
 

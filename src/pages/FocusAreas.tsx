@@ -2,20 +2,36 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../store';
 import Modal from '../components/Modal';
-import { generateId, getIconSvg, isThisWeek, formatDuration } from '../utils';
+import { generateId, getIconSvg } from '../utils';
 import { AREA_COLORS, AREA_ICONS, type FocusArea } from '../types';
+import type { Project } from '../types';
 
 export default function FocusAreas() {
   const { state, dispatch } = useApp();
   const navigate = useNavigate();
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<FocusArea | null>(null);
+  const [expandedAreaId, setExpandedAreaId] = useState<string | null>(null);
 
+  // Project form state (inlined from FocusAreaDetail)
+  const [showProjectForm, setShowProjectForm] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [projectAreaId, setProjectAreaId] = useState('');
+  const [pName, setPName] = useState('');
+  const [pDesc, setPDesc] = useState('');
+  const [pGithub, setPGithub] = useState('');
+  const [pTrello, setPTrello] = useState('');
+  const [pStatus, setPStatus] = useState<Project['status']>('active');
+
+  // Area form state
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [color, setColor] = useState(AREA_COLORS[0]);
   const [icon, setIcon] = useState(AREA_ICONS[0]);
   const [targetHours, setTargetHours] = useState('10');
+
+  // Inline target editing per area
+  const [editingTarget, setEditingTarget] = useState<Record<string, string>>({});
 
   const openNew = () => {
     setEditing(null);
@@ -70,32 +86,72 @@ export default function FocusAreas() {
     setShowForm(false);
   };
 
+  const openNewProject = (areaId: string) => {
+    setEditingProject(null);
+    setProjectAreaId(areaId);
+    setPName(''); setPDesc(''); setPGithub(''); setPTrello(''); setPStatus('active');
+    setShowProjectForm(true);
+  };
+
+  const openEditProject = (project: Project) => {
+    setEditingProject(project);
+    setProjectAreaId(project.focusAreaId);
+    setPName(project.name); setPDesc(project.description);
+    setPGithub(project.githubUrl); setPTrello(project.trelloUrl);
+    setPStatus(project.status);
+    setShowProjectForm(true);
+  };
+
+  const saveProject = () => {
+    if (!pName.trim()) return;
+    const project: Project = {
+      id: editingProject?.id || generateId(),
+      focusAreaId: projectAreaId,
+      name: pName.trim(),
+      description: pDesc.trim(),
+      githubUrl: pGithub.trim(),
+      trelloUrl: pTrello.trim(),
+      status: pStatus,
+      createdAt: editingProject?.createdAt || new Date().toISOString(),
+    };
+    dispatch({ type: editingProject ? 'UPDATE_PROJECT' : 'ADD_PROJECT', payload: project });
+    setShowProjectForm(false);
+  };
+
+  const saveTarget = (area: FocusArea, value: string) => {
+    const hours = parseFloat(value) || 0;
+    if (hours !== area.weeklyTargetHours) {
+      dispatch({ type: 'UPDATE_FOCUS_AREA', payload: { ...area, weeklyTargetHours: hours } });
+    }
+  };
+
   return (
     <div>
       <div className="section-header">
         <span className="section-title">Focus Areas</span>
-        <span className="text-secondary text-sm">{state.focusAreas.length} areas</span>
+        <button className="btn btn-ghost btn-sm" onClick={() => navigate('/templates')}
+          style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+            <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zm-5 8v-2h8v2H8zm0-4v-2h8v2H8zm0-4V7h3v2H8z"/>
+          </svg>
+          Manage Templates
+        </button>
       </div>
 
       {state.focusAreas.map(area => {
         const projects = state.projects.filter(p => p.focusAreaId === area.id);
-        const weekMins = state.timeEntries
-          .filter(e => e.focusAreaId === area.id && isThisWeek(e.startTime))
-          .reduce((s, e) => s + e.duration, 0);
+        const isExpanded = expandedAreaId === area.id;
 
         return (
-          <div className="card" key={area.id} onClick={() => navigate(`/areas/${area.id}`)}>
-            <div className="card-header">
+          <div className="card" key={area.id}>
+            <div className="card-header" onClick={() => setExpandedAreaId(isExpanded ? null : area.id)}
+              style={{ cursor: 'pointer' }}>
               <div className="area-icon" style={{ background: area.color }}>
                 <svg viewBox="0 0 24 24"><path d={getIconSvg(area.icon)} /></svg>
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div className="card-title truncate">{area.name}</div>
-                <div className="card-subtitle">
-                  {projects.length} realization{projects.length !== 1 ? 's' : ''}
-                  {' \u2022 '}
-                  {formatDuration(weekMins)} this week
-                </div>
+                <div className="card-subtitle">{area.description || '\u00a0'}</div>
               </div>
               <button className="btn btn-ghost btn-sm" onClick={(e) => openEdit(area, e)}>
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
@@ -103,24 +159,66 @@ export default function FocusAreas() {
                 </svg>
               </button>
             </div>
-            {area.description && (
-              <div className="text-secondary text-sm truncate">{area.description}</div>
+
+            {isExpanded && (
+              <div style={{ marginTop: 12 }}>
+                <div className="form-group">
+                  <label className="form-label">Weekly target hours</label>
+                  <input
+                    className="form-input"
+                    type="number"
+                    value={editingTarget[area.id] ?? String(area.weeklyTargetHours)}
+                    onChange={e => setEditingTarget({ ...editingTarget, [area.id]: e.target.value })}
+                    onBlur={e => saveTarget(area, e.target.value)}
+                    min="0"
+                    step="0.5"
+                  />
+                </div>
+
+                <div className="section-header" style={{ marginTop: 8 }}>
+                  <span className="section-title" style={{ fontSize: 13 }}>Realizations</span>
+                  <button className="btn btn-primary btn-sm" onClick={() => openNewProject(area.id)}>+ Add</button>
+                </div>
+
+                {projects.map(project => (
+                  <div className="project-card" key={project.id} onClick={() => openEditProject(project)}>
+                    <div className="flex-between">
+                      <span style={{ fontWeight: 600, fontSize: 14 }}>{project.name}</span>
+                      <span className={`project-status ${project.status}`}>{project.status}</span>
+                    </div>
+                    {project.description && (
+                      <div className="text-secondary text-sm mt-8">{project.description}</div>
+                    )}
+                    <div className="project-links">
+                      {project.githubUrl && (
+                        <a href={project.githubUrl} target="_blank" rel="noopener noreferrer"
+                          className="project-link" onClick={e => e.stopPropagation()}>
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                            <path d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z" />
+                          </svg>
+                          GitHub
+                        </a>
+                      )}
+                      {project.trelloUrl && (
+                        <a href={project.trelloUrl} target="_blank" rel="noopener noreferrer"
+                          className="project-link" onClick={e => e.stopPropagation()}>
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-8 12H7V7h4v8zm6-4h-4V7h4v4z" />
+                          </svg>
+                          Trello
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {projects.length === 0 && (
+                  <div className="text-secondary text-sm" style={{ textAlign: 'center', padding: 8 }}>
+                    No realizations yet.
+                  </div>
+                )}
+              </div>
             )}
-            <div style={{ marginTop: 8 }}>
-              <div className="bar-track">
-                <div
-                  className="bar-fill"
-                  style={{
-                    width: `${Math.min(100, area.weeklyTargetHours > 0 ? (weekMins / (area.weeklyTargetHours * 60)) * 100 : 0)}%`,
-                    background: area.color,
-                  }}
-                />
-              </div>
-              <div className="flex-between mt-8">
-                <span className="text-sm text-secondary">{formatDuration(weekMins)}</span>
-                <span className="text-sm text-secondary">Target: {area.weeklyTargetHours}h/wk</span>
-              </div>
-            </div>
           </div>
         );
       })}
@@ -208,6 +306,51 @@ export default function FocusAreas() {
             )}
             <button className="btn btn-primary" onClick={save}>
               {editing ? 'Save' : 'Create'}
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {showProjectForm && (
+        <Modal title={editingProject ? 'Edit Realization' : 'New Realization'} onClose={() => setShowProjectForm(false)}>
+          <div className="form-group">
+            <label className="form-label">Realization Name</label>
+            <input className="form-input" value={pName} onChange={e => setPName(e.target.value)}
+              placeholder="e.g. My Platformer Game" autoFocus />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Description</label>
+            <textarea className="form-textarea" value={pDesc} onChange={e => setPDesc(e.target.value)}
+              placeholder="Brief description..." rows={2} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Status</label>
+            <select className="form-select" value={pStatus}
+              onChange={e => setPStatus(e.target.value as Project['status'])}>
+              <option value="active">Active</option>
+              <option value="paused">Paused</option>
+              <option value="completed">Completed</option>
+            </select>
+          </div>
+          <div className="form-group">
+            <label className="form-label">GitHub URL</label>
+            <input className="form-input" value={pGithub} onChange={e => setPGithub(e.target.value)}
+              placeholder="https://github.com/user/repo" />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Trello URL</label>
+            <input className="form-input" value={pTrello} onChange={e => setPTrello(e.target.value)}
+              placeholder="https://trello.com/b/..." />
+          </div>
+          <div className="modal-actions">
+            {editingProject && (
+              <button className="btn btn-danger"
+                onClick={() => { dispatch({ type: 'DELETE_PROJECT', payload: editingProject.id }); setShowProjectForm(false); }}>
+                Delete
+              </button>
+            )}
+            <button className="btn btn-primary" onClick={saveProject}>
+              {editingProject ? 'Save' : 'Create'}
             </button>
           </div>
         </Modal>

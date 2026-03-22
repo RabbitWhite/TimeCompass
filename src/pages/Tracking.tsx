@@ -1,16 +1,13 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useApp } from '../store';
 import Modal from '../components/Modal';
-import { generateId, formatDuration, isThisWeek, getWeekStart, formatDate, formatTime } from '../utils';
+import { generateId, formatDuration, getCatchUpAreas } from '../utils';
 import type { TimeEntry, FocusArea } from '../types';
 
 export default function Tracking() {
   const { state, dispatch } = useApp();
-  const navigate = useNavigate();
   const [elapsed, setElapsed] = useState(0);
   const [showManual, setShowManual] = useState(false);
-  const [showAllocation, setShowAllocation] = useState(false);
 
   // Manual entry form
   const [mArea, setMArea] = useState('');
@@ -19,9 +16,6 @@ export default function Tracking() {
   const [mStart, setMStart] = useState('09:00');
   const [mEnd, setMEnd] = useState('10:00');
   const [mNote, setMNote] = useState('');
-
-  // Allocation editor
-  const [allocations, setAllocations] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (!state.activeTracking) { setElapsed(0); return; }
@@ -38,7 +32,7 @@ export default function Tracking() {
     ? state.focusAreas.find(a => a.id === state.activeTracking!.focusAreaId)
     : null;
 
-  const isStaleSession = elapsed > 8 * 3600; // tracking open for more than 8 hours
+  const isStaleSession = elapsed > 8 * 3600;
 
   const startTracking = (areaId: string) => {
     if (state.activeTracking) stopTracking();
@@ -87,31 +81,6 @@ export default function Tracking() {
     setShowManual(false);
   };
 
-  const openAllocation = () => {
-    const alloc: Record<string, number> = {};
-    state.focusAreas.forEach(a => { alloc[a.id] = a.weeklyTargetHours; });
-    setAllocations(alloc);
-    setShowAllocation(true);
-  };
-
-  const saveAllocations = () => {
-    Object.entries(allocations).forEach(([id, hours]) => {
-      const area = state.focusAreas.find(a => a.id === id);
-      if (area && area.weeklyTargetHours !== hours) {
-        dispatch({ type: 'UPDATE_FOCUS_AREA', payload: { ...area, weeklyTargetHours: hours } });
-      }
-    });
-    setShowAllocation(false);
-  };
-
-  const weekEntries = state.timeEntries
-    .filter(e => isThisWeek(e.startTime))
-    .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
-
-  const todayEntries = weekEntries.filter(e => {
-    return new Date(e.startTime).toDateString() === new Date().toDateString();
-  });
-
   const formatElapsed = (secs: number) => {
     const h = Math.floor(secs / 3600);
     const m = Math.floor((secs % 3600) / 60);
@@ -119,7 +88,12 @@ export default function Tracking() {
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   };
 
-  const totalTarget = state.focusAreas.reduce((s, a) => s + a.weeklyTargetHours, 0);
+  const catchUpAreas = getCatchUpAreas(
+    state.focusAreas,
+    state.timeEntries,
+    state.settings.gamification,
+    3,
+  );
 
   return (
     <div>
@@ -164,6 +138,7 @@ export default function Tracking() {
 
       <div className="section-header">
         <span className="section-title">Quick Start</span>
+        <button className="btn btn-secondary btn-sm" onClick={() => setShowManual(true)}>+ Manual</button>
       </div>
       <div className="quick-buttons">
         {state.focusAreas.map(area => (
@@ -185,81 +160,23 @@ export default function Tracking() {
         </div>
       )}
 
-      <div className="section-header">
-        <span className="section-title">Weekly Allocation</span>
-        <div style={{ display: 'flex', gap: 6 }}>
-          <button className="btn btn-ghost btn-sm" onClick={() => navigate('/templates')}
-            title="Week Templates" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
-              <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zm-5 8v-2h8v2H8zm0-4v-2h8v2H8zm0-4V7h3v2H8z"/>
-            </svg>
-            Templates
-          </button>
-          <button className="btn btn-secondary btn-sm" onClick={openAllocation}>Edit</button>
-        </div>
-      </div>
-      {state.focusAreas.map(area => {
-        const weekMins = weekEntries
-          .filter(e => e.focusAreaId === area.id)
-          .reduce((s, e) => s + e.duration, 0);
-        const targetMins = area.weeklyTargetHours * 60;
-        const pct = targetMins > 0 ? Math.min(100, (weekMins / targetMins) * 100) : 0;
-        return (
-          <div className="allocation-bar" key={area.id}>
-            <div className="allocation-header">
-              <div className="allocation-name">
-                <span className="dot" style={{ background: area.color }} />
-                {area.name}
-              </div>
-              <span className="allocation-hours">
-                {formatDuration(weekMins)} / {area.weeklyTargetHours}h
-              </span>
-            </div>
-            <div className="bar-track">
-              <div className="bar-fill" style={{ width: `${pct}%`, background: area.color }} />
-            </div>
+      {catchUpAreas.length > 0 && (
+        <>
+          <div className="section-header mt-16">
+            <span className="section-title">Catch Up</span>
           </div>
-        );
-      })}
-      {totalTarget > 0 && (
-        <div className="text-secondary text-sm mt-8">
-          Total target: {totalTarget}h/week
-        </div>
-      )}
-
-      <div className="section-header mt-16">
-        <span className="section-title">Today's Log</span>
-        <button className="btn btn-secondary btn-sm" onClick={() => setShowManual(true)}>+ Manual</button>
-      </div>
-      {todayEntries.map(entry => {
-        const area = state.focusAreas.find(a => a.id === entry.focusAreaId);
-        const project = entry.projectId ? state.projects.find(p => p.id === entry.projectId) : null;
-        return (
-          <div className="time-entry" key={entry.id}>
-            <div className="time-entry-info">
-              <div className="time-entry-area" style={{ color: area?.color }}>
-                {area?.name || 'Unknown'}
-                {project && <span className="time-entry-project"> / {project.name}</span>}
-              </div>
-              <div className="time-entry-time">
-                {formatTime(entry.startTime)} - {formatTime(entry.endTime)}
-                {entry.note && ` \u2022 ${entry.note}`}
+          {catchUpAreas.map(({ area, gapMinutes }) => (
+            <div className="allocation-bar" key={area.id}>
+              <div className="allocation-header">
+                <div className="allocation-name">
+                  <span className="dot" style={{ background: area.color }} />
+                  {area.name}
+                </div>
+                <span className="allocation-hours">{formatDuration(gapMinutes)} behind</span>
               </div>
             </div>
-            <div className="time-entry-duration">{formatDuration(entry.duration)}</div>
-            <button
-              className="btn btn-ghost btn-sm"
-              onClick={() => dispatch({ type: 'DELETE_TIME_ENTRY', payload: entry.id })}
-            >
-              &times;
-            </button>
-          </div>
-        );
-      })}
-      {todayEntries.length === 0 && (
-        <div className="text-secondary text-sm" style={{ textAlign: 'center', padding: 16 }}>
-          No time entries today.
-        </div>
+          ))}
+        </>
       )}
 
       {showManual && (
@@ -302,39 +219,6 @@ export default function Tracking() {
           </div>
           <div className="modal-actions">
             <button className="btn btn-primary" onClick={saveManual}>Save Entry</button>
-          </div>
-        </Modal>
-      )}
-
-      {showAllocation && (
-        <Modal title="Weekly Time Allocation" onClose={() => setShowAllocation(false)}>
-          <p className="text-secondary text-sm mb-16">
-            Set how many hours per week you want to dedicate to each focus area.
-          </p>
-          {state.focusAreas.map(area => (
-            <div className="form-group" key={area.id}>
-              <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span className="dot" style={{ background: area.color, width: 10, height: 10, borderRadius: '50%', display: 'inline-block' }} />
-                {area.name}
-              </label>
-              <div className="time-input-row">
-                <input
-                  className="form-input"
-                  type="number"
-                  value={allocations[area.id] || 0}
-                  onChange={e => setAllocations({ ...allocations, [area.id]: parseFloat(e.target.value) || 0 })}
-                  min="0"
-                  step="0.5"
-                />
-                <span className="text-secondary">hours/week</span>
-              </div>
-            </div>
-          ))}
-          <div className="text-secondary text-sm mt-8">
-            Total: {Object.values(allocations).reduce((s, v) => s + v, 0)}h/week
-          </div>
-          <div className="modal-actions">
-            <button className="btn btn-primary" onClick={saveAllocations}>Save</button>
           </div>
         </Modal>
       )}

@@ -3,7 +3,6 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import BottomNav from './components/BottomNav';
 import Dashboard from './pages/Dashboard';
 import FocusAreas from './pages/FocusAreas';
-import FocusAreaDetail from './pages/FocusAreaDetail';
 import Timeline from './pages/Timeline';
 import Tracking from './pages/Tracking';
 import Statistics from './pages/Statistics';
@@ -119,7 +118,6 @@ export default function App() {
           <Route path="/" element={<Navigate to="/track" replace />} />
           <Route path="/status" element={<Dashboard />} />
           <Route path="/areas" element={<FocusAreas />} />
-          <Route path="/areas/:id" element={<FocusAreaDetail />} />
           <Route path="/timeline" element={<Timeline />} />
           <Route path="/track" element={<Tracking />} />
           <Route path="/stats" element={<Statistics />} />

@@ -9,13 +9,13 @@ GIT_SHA=$(git rev-parse --short HEAD)
 rm -rf dist
 mkdir -p dist/pages dist/components
 
-# 1. Compile TypeScript -> JavaScript using globally installed tsc
+# 1. Compile TypeScript -> JavaScript using globally installed npx tsc
 echo "Compiling TypeScript..."
-tsc -p tsconfig.cdn.json
+npx tsc -p tsconfig.cdn.json
 
 # 2. Post-process compiled JS files
 echo "Post-processing JavaScript files..."
-python3 << 'PYEOF'
+python << 'PYEOF'
 import re
 import os
 import glob

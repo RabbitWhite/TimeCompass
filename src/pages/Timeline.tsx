@@ -99,7 +99,7 @@ export default function Timeline() {
           if (res.status === 401) {
             dispatch({ type: 'UPDATE_SETTINGS', payload: { googleAccessToken: '', googleCalendarConnected: false } });
             setShowSync(false);
-            alert('Google Calendar session expired — reconnect in Settings');
+            alert('Google Calendar session expired — please reconnect.');
             return;
           }
           const data = await res.json();

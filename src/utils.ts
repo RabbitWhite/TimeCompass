@@ -207,14 +207,15 @@ export function getWeekWithinPeriod(weekStart: Date, periodIndex: number): numbe
   return Math.min(4, Math.max(1, Math.floor((weekNoon - periodNoon) / WEEK_MS) + 1));
 }
 
-/** Returns the n focus areas with the lowest percentage of current-period target
- *  achieved, along with each area's time gap behind the full 4-week target. */
+/** Returns all focus areas with a non-zero weekly target, sorted by lowest
+ *  percentage of current-period target achieved. n is accepted for backward
+ *  compatibility but ignored — all eligible areas are returned. */
 export function getCatchUpAreas(
   focusAreas: FocusArea[],
   timeEntries: TimeEntry[],
   settings: GamificationSettings,
   n: number,
-): Array<{ area: FocusArea; gapMinutes: number }> {
+): Array<{ area: FocusArea; gapMinutes: number; totalMinutes: number; urgency: number }> {
   const periodIdx = getPeriodIndex(getWeekStart());
   const { start: periodStart, end: periodEnd } = getPeriodDateRange(periodIdx);
 
@@ -222,16 +223,23 @@ export function getCatchUpAreas(
     .filter(a => a.weeklyTargetHours > 0)
     .map(area => {
       const periodTargetMinutes = area.weeklyTargetHours * 4 * 60;
-      const actualMinutes = timeEntries
+      const totalMinutes = timeEntries
         .filter(e => e.focusAreaId === area.id && new Date(e.startTime) >= periodStart && new Date(e.startTime) <= periodEnd)
         .reduce((s, e) => s + e.duration, 0);
-      const pct = actualMinutes / periodTargetMinutes;
-      const gapMinutes = Math.max(0, periodTargetMinutes - actualMinutes);
-      return { area, pct, gapMinutes };
+      const pct = totalMinutes / periodTargetMinutes;
+      const gapMinutes = Math.max(0, periodTargetMinutes - totalMinutes);
+      let urgency: number;
+      if (gapMinutes === 0) {
+        urgency = 0;
+      } else {
+        const ratio = gapMinutes / periodTargetMinutes;
+        urgency = ratio < 0.25 ? 1 : ratio <= 0.5 ? 2 : 3;
+      }
+      return { area, pct, gapMinutes, totalMinutes, urgency };
     });
 
   ranked.sort((a, b) => a.pct - b.pct);
-  return ranked.slice(0, n).map(({ area, gapMinutes }) => ({ area, gapMinutes }));
+  return ranked.map(({ area, gapMinutes, totalMinutes, urgency }) => ({ area, gapMinutes, totalMinutes, urgency }));
 }
 
 /** Max achievable points for a week given current settings (excluding streak bonus). */

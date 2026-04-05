@@ -25,6 +25,12 @@ jobs:
         env:
           FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
+      - name: Install TypeScript
+        run: npm install -g typescript
+
+      - name: Build
+        run: bash ./build-cdn.sh
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 

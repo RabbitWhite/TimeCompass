@@ -1,6 +1,9 @@
 // Minimal ambient declarations for CDN builds (no node_modules required).
 // These satisfy the TypeScript compiler when @types/* packages are not installed.
 
+// Allow CSS side-effect imports (e.g. import './App.css')
+declare module '*.css' {}
+
 // Allow import.meta.env (Vite convention; build-cdn.sh replaces at runtime)
 interface ImportMeta {
   readonly env: {

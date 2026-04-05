@@ -92,7 +92,7 @@ export default function Tracking() {
     state.focusAreas,
     state.timeEntries,
     state.settings.gamification,
-    3,
+    state.focusAreas.length,
   );
 
   return (
@@ -160,19 +160,30 @@ export default function Tracking() {
         </div>
       )}
 
-      {catchUpAreas.length > 0 && (
+      {state.focusAreas.length > 0 && (
         <>
           <div className="section-header mt-16">
-            <span className="section-title">Catch Up</span>
+            <span className="section-title">Focus Areas</span>
           </div>
-          {catchUpAreas.map(({ area, gapMinutes }) => (
+          {catchUpAreas.map(({ area, gapMinutes, totalMinutes, urgency }) => (
             <div className="allocation-bar" key={area.id}>
               <div className="allocation-header">
                 <div className="allocation-name">
                   <span className="dot" style={{ background: area.color }} />
                   {area.name}
                 </div>
-                <span className="allocation-hours">{formatDuration(gapMinutes)} behind</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className="allocation-hours">{formatDuration(totalMinutes)} done</span>
+                  {gapMinutes > 0 && (
+                    <span className="allocation-hours">{formatDuration(gapMinutes)} behind</span>
+                  )}
+                  <span style={{
+                    color: urgency === 0 ? 'var(--success)' : urgency === 1 ? 'var(--text-muted)' : urgency === 2 ? 'var(--warning)' : 'var(--error)',
+                    fontWeight: 600,
+                  }}>
+                    {urgency === 0 ? '✓' : urgency === 1 ? '!' : urgency === 2 ? '!!' : '!!!'}
+                  </span>
+                </div>
               </div>
             </div>
           ))}

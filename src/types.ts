@@ -61,6 +61,14 @@ export interface CalendarEvent {
   calendarName: string;
 }
 
+export interface WalletTransaction {
+  id: string;
+  date: string;         // ISO string
+  amount: number;       // always positive
+  note: string;
+  type: 'credit' | 'debit';
+}
+
 export interface ActiveTracking {
   focusAreaId: string;
   projectId: string;
@@ -104,6 +112,8 @@ export interface AppSettings {
   splashPrizeImage: string | null;
   splashDismissMode: 'tap' | 'timed';
   splashDuration: number;
+  walletBalance: number;
+  lastCreditedPeriodIndex: number;
 }
 
 export interface AppState {
@@ -115,6 +125,7 @@ export interface AppState {
   settings: AppSettings;
   weeklyScores: WeeklyScore[];
   weekTemplates: WeekTemplate[];
+  walletTransactions: WalletTransaction[];
 }
 
 export type AppAction =
@@ -139,7 +150,9 @@ export type AppAction =
   | { type: 'ADD_WEEK_TEMPLATE'; payload: WeekTemplate }
   | { type: 'UPDATE_WEEK_TEMPLATE'; payload: WeekTemplate }
   | { type: 'DELETE_WEEK_TEMPLATE'; payload: string }
-  | { type: 'APPLY_WEEK_TEMPLATE'; payload: string };
+  | { type: 'APPLY_WEEK_TEMPLATE'; payload: string }
+  | { type: 'ADD_WALLET_TRANSACTION'; payload: WalletTransaction }
+  | { type: 'UPDATE_WALLET_SETTINGS'; payload: Partial<AppSettings> };
 
 export const AREA_ICONS = [
   'code', 'camera', 'book', 'music', 'brush', 'fitness',

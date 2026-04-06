@@ -35,7 +35,7 @@ export default function SplashScreen() {
       onClick={splashDismissMode === 'tap' ? dismiss : undefined}
       style={{
         position: 'fixed', inset: 0, zIndex: 9999,
-        background: 'var(--bg)',
+        background: 'linear-gradient(135deg, rgba(30,20,60,0.97) 0%, rgba(15,10,30,0.97) 100%)',
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
         padding: '2rem',

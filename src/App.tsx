@@ -53,7 +53,7 @@ export default function App() {
     return () => window.removeEventListener('sw-update-ready', handler);
   }, []);
 
-  const saveGamSettings = () => {
+  const saveGameSettings = () => {
     dispatch({ type: 'UPDATE_GAMIFICATION_SETTINGS', payload: editSettings });
     setShowGameSettings(false);
   };
@@ -222,7 +222,7 @@ export default function App() {
           </div>
           <div className="modal-actions">
             <button className="btn btn-secondary" onClick={() => setShowGameSettings(false)}>Cancel</button>
-            <button className="btn btn-primary" onClick={saveGamSettings}>Save</button>
+            <button className="btn btn-primary" onClick={saveGameSettings}>Save</button>
           </div>
         </Modal>
       )}

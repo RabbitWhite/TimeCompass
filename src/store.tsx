@@ -1,5 +1,5 @@
 import { createContext, useContext, useReducer, useEffect, type ReactNode } from 'react';
-import type { AppState, AppAction } from './types';
+import type { AppState, AppAction, WalletTransaction } from './types';
 
 const STORAGE_KEY = 'lifetracker-state';
 
@@ -25,9 +25,12 @@ const defaultState: AppState = {
     splashPrizeImage: null,
     splashDismissMode: 'tap',
     splashDuration: 5,
+    walletBalance: 0,
+    lastCreditedPeriodIndex: -1,
   },
   weeklyScores: [],
   weekTemplates: [],
+  walletTransactions: [],
 };
 
 function loadState(): AppState {
@@ -45,6 +48,7 @@ function loadState(): AppState {
         },
         weeklyScores: parsed.weeklyScores || [],
         weekTemplates: parsed.weekTemplates || [],
+        walletTransactions: parsed.walletTransactions || [],
       };
     }
   } catch { /* ignore */ }
@@ -143,6 +147,10 @@ function reducer(state: AppState, action: AppAction): AppState {
       );
       return { ...state, focusAreas: updatedFocusAreas, projects: updatedProjects, weekTemplates: updatedTemplates };
     }
+    case 'ADD_WALLET_TRANSACTION':
+      return { ...state, walletTransactions: [action.payload, ...state.walletTransactions] };
+    case 'UPDATE_WALLET_SETTINGS':
+      return { ...state, settings: { ...state.settings, ...action.payload } };
     default:
       return state;
   }

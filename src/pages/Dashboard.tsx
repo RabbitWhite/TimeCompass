@@ -1,12 +1,19 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../store';
-import { formatDuration, getWeekStart, calculateWeeklyScore, getPeriodIndex, getPeriodDateRange, computeMaxWeekPoints, pointsToEuros, formatEuros } from '../utils';
+import Modal from '../components/Modal';
+import { formatDuration, getWeekStart, calculateWeeklyScore, getPeriodIndex, getPeriodDateRange, computeMaxWeekPoints, pointsToEuros, formatEuros, generateId } from '../utils';
+import type { WalletTransaction } from '../types';
 
 export default function Dashboard() {
-  const { state } = useApp();
+  const { state, dispatch } = useApp();
   const navigate = useNavigate();
   const [elapsed, setElapsed] = useState(0);
+  const [showSpend, setShowSpend] = useState(false);
+  const [spendAmount, setSpendAmount] = useState('');
+  const [spendNote, setSpendNote] = useState('');
+  const [showLog, setShowLog] = useState(false);
+  const spendInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!state.activeTracking) return;
@@ -116,6 +123,56 @@ export default function Dashboard() {
         </div>
       )}
 
+      {budget > 0 && (
+        <div className="dash-points-card" style={{ marginTop: 8 }}>
+          <div className="dash-points-left">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="var(--success)">
+              <path d="M21 18v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v1h-9a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h9zm-9-2h10V8H12v8zm4-2.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z" />
+            </svg>
+            <div>
+              <div className="dash-points-level">Prize Wallet</div>
+              <div className="dash-points-total">Accumulated earnings</div>
+            </div>
+          </div>
+          <div className="dash-points-right">
+            <div className="dash-points-week">€{formatEuros(state.settings.walletBalance)}</div>
+            <button className="btn btn-sm btn-primary" style={{ marginTop: 4 }} onClick={() => { setSpendAmount(''); setSpendNote(''); setShowSpend(true); }}>
+              Use Prize Money
+            </button>
+          </div>
+        </div>
+      )}
+
+      {budget > 0 && (
+        <div style={{ marginBottom: 8 }}>
+          <button
+            className="btn btn-ghost btn-sm"
+            style={{ fontSize: 12, padding: '2px 8px' }}
+            onClick={() => setShowLog(l => !l)}
+          >
+            {showLog ? 'Hide' : 'Show'} transaction log
+          </button>
+          {showLog && (
+            <div style={{ marginTop: 8 }}>
+              {state.walletTransactions.length === 0 && (
+                <p className="text-secondary text-sm">No transactions yet.</p>
+              )}
+              {state.walletTransactions.slice(0, 10).map(tx => (
+                <div key={tx.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
+                  <div>
+                    <div style={{ fontSize: 13 }}>{tx.note}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{new Date(tx.date).toLocaleDateString()}</div>
+                  </div>
+                  <div style={{ fontWeight: 600, color: tx.type === 'credit' ? 'var(--success)' : 'var(--error)' }}>
+                    {tx.type === 'credit' ? '+' : '-'}€{formatEuros(tx.amount)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {periodTargetMinutes > 0 && (
         <>
           <div className="section-header mt-16">
@@ -141,6 +198,57 @@ export default function Dashboard() {
             Add Focus Area
           </button>
         </div>
+      )}
+
+      {showSpend && (
+        <Modal title="Use Prize Money" onClose={() => setShowSpend(false)}>
+          <div className="form-group">
+            <label className="form-label">Amount (€)</label>
+            <input
+              ref={spendInputRef}
+              className="form-input"
+              type="number"
+              min="0.01"
+              step="0.01"
+              value={spendAmount}
+              onChange={e => setSpendAmount(e.target.value)}
+              autoFocus
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Note (optional)</label>
+            <input
+              className="form-input"
+              type="text"
+              placeholder="What did you buy?"
+              value={spendNote}
+              onChange={e => setSpendNote(e.target.value)}
+            />
+          </div>
+          <div className="modal-actions">
+            <button className="btn btn-secondary" onClick={() => setShowSpend(false)}>Cancel</button>
+            <button
+              className="btn btn-primary"
+              disabled={!spendAmount || parseFloat(spendAmount) <= 0}
+              onClick={() => {
+                const amount = parseFloat(spendAmount);
+                if (!amount || amount <= 0) return;
+                const tx: WalletTransaction = {
+                  id: generateId(),
+                  date: new Date().toISOString(),
+                  amount,
+                  note: spendNote.trim() || 'Purchase',
+                  type: 'debit',
+                };
+                dispatch({ type: 'ADD_WALLET_TRANSACTION', payload: tx });
+                dispatch({ type: 'UPDATE_WALLET_SETTINGS', payload: { walletBalance: Math.max(0, state.settings.walletBalance - amount) } });
+                setShowSpend(false);
+              }}
+            >
+              Confirm
+            </button>
+          </div>
+        </Modal>
       )}
     </div>
   );

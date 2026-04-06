@@ -10,8 +10,8 @@ import WeekTemplates from './pages/WeekTemplates';
 import Modal from './components/Modal';
 import SplashScreen from './components/SplashScreen';
 import { useApp } from './store';
-import { calculateWeeklyScore, getWeekStart } from './utils';
-import type { GamificationSettings, AppSettings } from './types';
+import { calculateWeeklyScore, getWeekStart, getPeriodIndex, computeMaxWeekPoints, getCompletedPeriodEuros, generateId } from './utils';
+import type { GamificationSettings, AppSettings, WalletTransaction } from './types';
 import './App.css';
 
 export default function App() {
@@ -30,6 +30,8 @@ export default function App() {
 
   // Persist current week's score whenever it changes (moved from Gamification.tsx)
   const currentWeekStart = useMemo(() => getWeekStart(), []);
+  const prevCompletedPeriodIdx = useMemo(() => getPeriodIndex(currentWeekStart) - 1, [currentWeekStart]);
+  const maxWeekPoints = useMemo(() => computeMaxWeekPoints(state.focusAreas, state.settings.gamification), [state.focusAreas, state.settings.gamification]);
   const previousStreak = useMemo(() => {
     const prevScores = state.weeklyScores
       .filter(s => new Date(s.weekStart) < currentWeekStart)
@@ -52,6 +54,30 @@ export default function App() {
       dispatch({ type: 'SAVE_WEEKLY_SCORE', payload: currentScore });
     }
   }, [currentScore]);
+
+  useEffect(() => {
+    const { lastCreditedPeriodIndex, walletBalance, gamification } = state.settings;
+    if (!gamification.enabled || gamification.monthlyRewardBudget === 0) return;
+    if (prevCompletedPeriodIdx < 0) return;
+    if (lastCreditedPeriodIndex >= prevCompletedPeriodIdx) return;
+
+    let balance = walletBalance;
+    let lastIdx = lastCreditedPeriodIndex;
+    for (let idx = lastCreditedPeriodIndex + 1; idx <= prevCompletedPeriodIdx; idx++) {
+      const euros = getCompletedPeriodEuros(state.weeklyScores, idx, maxWeekPoints, gamification.monthlyRewardBudget);
+      const tx: WalletTransaction = {
+        id: generateId(),
+        date: new Date().toISOString(),
+        amount: euros,
+        note: 'Period earnings',
+        type: 'credit',
+      };
+      dispatch({ type: 'ADD_WALLET_TRANSACTION', payload: tx });
+      balance += euros;
+      lastIdx = idx;
+    }
+    dispatch({ type: 'UPDATE_WALLET_SETTINGS', payload: { walletBalance: balance, lastCreditedPeriodIndex: lastIdx } });
+  }, [state.weeklyScores, state.settings.lastCreditedPeriodIndex, prevCompletedPeriodIdx]);
 
   useEffect(() => {
     const handler = () => setSwUpdateReady(true);

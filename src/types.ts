@@ -100,6 +100,10 @@ export interface AppSettings {
   googleAccessToken: string;
   googleClientId: string;
   gamification: GamificationSettings;
+  splashPhilosophyText: string;
+  splashPrizeImage: string | null;
+  splashDismissMode: 'tap' | 'timed';
+  splashDuration: number;
 }
 
 export interface AppState {

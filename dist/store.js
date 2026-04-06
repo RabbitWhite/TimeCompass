@@ -19,9 +19,16 @@ const defaultState = {
             enabled: true,
             monthlyRewardBudget: 0,
         },
+        splashPhilosophyText: '',
+        splashPrizeImage: null,
+        splashDismissMode: 'tap',
+        splashDuration: 5,
+        walletBalance: 0,
+        lastCreditedPeriodIndex: -1,
     },
     weeklyScores: [],
     weekTemplates: [],
+    walletTransactions: [],
 };
 function loadState() {
     try {
@@ -38,6 +45,7 @@ function loadState() {
                 },
                 weeklyScores: parsed.weeklyScores || [],
                 weekTemplates: parsed.weekTemplates || [],
+                walletTransactions: parsed.walletTransactions || [],
             };
         }
     }
@@ -135,6 +143,10 @@ function reducer(state, action) {
             const updatedTemplates = state.weekTemplates.map(t => t.id === action.payload ? { ...t, lastUsedAt: new Date().toISOString() } : t);
             return { ...state, focusAreas: updatedFocusAreas, projects: updatedProjects, weekTemplates: updatedTemplates };
         }
+        case 'ADD_WALLET_TRANSACTION':
+            return { ...state, walletTransactions: [action.payload, ...state.walletTransactions] };
+        case 'UPDATE_WALLET_SETTINGS':
+            return { ...state, settings: { ...state.settings, ...action.payload } };
         default:
             return state;
     }

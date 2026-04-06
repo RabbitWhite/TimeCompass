@@ -228,6 +228,13 @@ export function pointsToEuros(actualPoints, maxWeekPoints, budget) {
 export function formatEuros(amount) {
     return amount.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
+/** Returns total euros earned across all weeks in a completed period. */
+export function getCompletedPeriodEuros(weeklyScores, periodIndex, maxWeekPoints, budget) {
+    const totalPoints = weeklyScores
+        .filter(s => getPeriodIndex(new Date(s.weekStart)) === periodIndex)
+        .reduce((sum, s) => sum + s.totalPoints, 0);
+    return pointsToEuros(totalPoints, maxWeekPoints, budget);
+}
 export function getIconSvg(icon) {
     const icons = {
         code: 'M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z',

@@ -30,7 +30,9 @@ export default function SplashScreen() {
         return null;
     return (_jsxs("div", { onClick: splashDismissMode === 'tap' ? dismiss : undefined, style: {
             position: 'fixed', inset: 0, zIndex: 9999,
-            background: 'var(--bg)',
+            background: 'rgba(0, 0, 0, 0.85)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
             display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'center',
             padding: '2rem',

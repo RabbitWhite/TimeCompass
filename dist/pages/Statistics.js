@@ -48,7 +48,7 @@ export default function Statistics() {
     }, [state.timeEntries, startDate, endDate, filterArea]);
     // Per-area breakdown — sorted by lowest current-period completion first
     const areaBreakdown = useMemo(() => {
-        const catchUpOrder = getCatchUpAreas(state.focusAreas, state.timeEntries, gamSettings, state.focusAreas.length);
+        const catchUpOrder = getCatchUpAreas(state.focusAreas, state.timeEntries, gamSettings, state.focusAreas.length, state.settings.periodResetDate);
         const rankMap = new Map(catchUpOrder.map(({ area }, i) => [area.id, i]));
         const map = new Map();
         entries.forEach(e => {

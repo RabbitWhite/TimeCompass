@@ -10,7 +10,7 @@ import WeekTemplates from './pages/WeekTemplates';
 import Modal from './components/Modal';
 import SplashScreen from './components/SplashScreen';
 import { useApp } from './store';
-import { calculateWeeklyScore, getWeekStart, getPeriodIndex, computeMaxWeekPoints, getCompletedPeriodEuros, generateId } from './utils';
+import { calculateWeeklyScore, getWeekStart, getPeriodIndex, getPeriodDateRange, computeMaxWeekPoints, getCompletedPeriodEuros, pointsToEuros, formatEuros, generateId } from './utils';
 import type { GamificationSettings, AppSettings, WalletTransaction } from './types';
 import './App.css';
 
@@ -26,6 +26,7 @@ export default function App() {
     splashDuration: state.settings.splashDuration,
   });
   const [swUpdateReady, setSwUpdateReady] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Persist current week's score whenever it changes (moved from Gamification.tsx)
@@ -47,6 +48,22 @@ export default function App() {
   const currentScore = useMemo(() =>
     calculateWeeklyScore(state.focusAreas, state.timeEntries, state.settings.gamification, currentWeekStart, previousStreak),
     [state.focusAreas, state.timeEntries, state.settings.gamification, currentWeekStart, previousStreak],
+  );
+
+  const currentPeriodIdx = prevCompletedPeriodIdx + 1;
+  const { start: currentPeriodStart } = getPeriodDateRange(currentPeriodIdx);
+  const currentPeriodPoints = useMemo(() => {
+    const past = state.weeklyScores
+      .filter(s => {
+        const wStart = new Date(s.weekStart);
+        return getPeriodIndex(wStart) === currentPeriodIdx
+          && wStart.getTime() !== currentWeekStart.getTime();
+      })
+      .reduce((s, sc) => s + sc.totalPoints, 0);
+    return past + currentScore.totalPoints;
+  }, [state.weeklyScores, currentScore, currentPeriodIdx, currentWeekStart]);
+  const currentPeriodEuros = pointsToEuros(
+    currentPeriodPoints, maxWeekPoints, state.settings.gamification.monthlyRewardBudget,
   );
 
   useEffect(() => {
@@ -199,7 +216,7 @@ export default function App() {
       )}
 
       {showGameSettings && (
-        <Modal title="Reward Settings" onClose={() => setShowGameSettings(false)}>
+        <Modal title="Reward Settings" onClose={() => { setShowGameSettings(false); setShowResetConfirm(false); }}>
           <div className="form-group">
             <label className="form-label">Monthly reward budget (€)</label>
             <input
@@ -262,6 +279,71 @@ export default function App() {
               </button>
             </label>
           </div>
+          <div className="form-group">
+            <label className="form-label">Period</label>
+            <div className="text-secondary text-sm" style={{ marginBottom: 8 }}>
+              Current period started{' '}
+              {state.settings.periodResetDate
+                ? new Date(state.settings.periodResetDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+                : currentPeriodStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+              {state.settings.periodResetDate && ' (manual reset)'}
+            </div>
+            {!showResetConfirm ? (
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  className="btn btn-sm"
+                  style={{ background: 'var(--error)', color: '#fff', borderColor: 'var(--error)' }}
+                  onClick={() => setShowResetConfirm(true)}
+                  type="button"
+                >
+                  Reset Current Period
+                </button>
+                {state.settings.periodResetDate && (
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => dispatch({ type: 'UPDATE_SETTINGS', payload: { periodResetDate: null } })}
+                    type="button"
+                  >
+                    Clear Reset
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div style={{ background: 'var(--surface-alt, var(--surface))', borderRadius: 8, padding: 12, border: '1px solid var(--error)' }}>
+                <div className="text-sm" style={{ marginBottom: 8 }}>
+                  This starts a new period from today. Old entries are kept but excluded from current period calculations.
+                </div>
+                <div className="text-sm text-secondary" style={{ marginBottom: 12 }}>
+                  Current period: <strong>{Math.round(currentPeriodPoints)} pts</strong>
+                  {state.settings.gamification.monthlyRewardBudget > 0 && (
+                    <> · <strong>€{formatEuros(currentPeriodEuros)}</strong></>
+                  )}
+                  {' '}will be excluded going forward.
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => setShowResetConfirm(false)}
+                    type="button"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="btn btn-sm"
+                    style={{ background: 'var(--error)', color: '#fff', borderColor: 'var(--error)' }}
+                    onClick={() => {
+                      dispatch({ type: 'UPDATE_SETTINGS', payload: { periodResetDate: new Date().toISOString().split('T')[0] } });
+                      setShowResetConfirm(false);
+                    }}
+                    type="button"
+                  >
+                    Confirm Reset
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="form-group">
             <label className="form-label">Motivation</label>
             <textarea

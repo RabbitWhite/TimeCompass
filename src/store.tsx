@@ -27,6 +27,7 @@ const defaultState: AppState = {
     splashDuration: 5,
     walletBalance: 0,
     lastCreditedPeriodIndex: -1,
+    periodResetDate: null,
   },
   weeklyScores: [],
   weekTemplates: [],

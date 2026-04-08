@@ -60,6 +60,7 @@ export default function Statistics() {
       state.timeEntries,
       gamSettings,
       state.focusAreas.length,
+      state.settings.periodResetDate,
     );
     const rankMap = new Map(catchUpOrder.map(({ area }, i) => [area.id, i]));
     const map = new Map<string, number>();

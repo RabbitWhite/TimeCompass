@@ -93,6 +93,7 @@ export default function Tracking() {
     state.timeEntries,
     state.settings.gamification,
     state.focusAreas.length,
+    state.settings.periodResetDate,
   );
 
   return (

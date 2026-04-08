@@ -64,11 +64,16 @@ export default function Dashboard() {
   const { start: periodStart, end: pEnd } = getPeriodDateRange(currentPeriodIdx);
   const budget = gamSettings.monthlyRewardBudget;
 
+  const { periodResetDate } = state.settings;
+  const effectivePeriodStart = periodResetDate && !isNaN(new Date(periodResetDate).getTime())
+    ? new Date(periodResetDate)
+    : periodStart;
+
   // Period progress
   const periodActualMinutes = state.timeEntries
     .filter(e => {
       const d = new Date(e.startTime);
-      return d >= periodStart && d <= pEnd;
+      return d >= effectivePeriodStart && d <= pEnd;
     })
     .reduce((s, e) => s + e.duration, 0);
   const periodTargetMinutes = state.focusAreas.reduce((s, a) => s + a.weeklyTargetHours * 4 * 60, 0);

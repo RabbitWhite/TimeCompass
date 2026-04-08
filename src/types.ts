@@ -114,6 +114,7 @@ export interface AppSettings {
   splashDuration: number;
   walletBalance: number;
   lastCreditedPeriodIndex: number;
+  periodResetDate: string | null;
 }
 
 export interface AppState {

@@ -183,15 +183,18 @@ export function getWeekWithinPeriod(weekStart, periodIndex) {
 /** Returns all focus areas with a non-zero weekly target, sorted by lowest
  *  percentage of current-period target achieved. n is accepted for backward
  *  compatibility but ignored — all eligible areas are returned. */
-export function getCatchUpAreas(focusAreas, timeEntries, settings, n) {
+export function getCatchUpAreas(focusAreas, timeEntries, settings, n, periodResetDate) {
     const periodIdx = getPeriodIndex(getWeekStart());
     const { start: periodStart, end: periodEnd } = getPeriodDateRange(periodIdx);
+    const effectiveStart = periodResetDate && !isNaN(new Date(periodResetDate).getTime())
+        ? new Date(periodResetDate)
+        : periodStart;
     const ranked = focusAreas
         .filter(a => a.weeklyTargetHours > 0)
         .map(area => {
         const periodTargetMinutes = area.weeklyTargetHours * 4 * 60;
         const totalMinutes = timeEntries
-            .filter(e => e.focusAreaId === area.id && new Date(e.startTime) >= periodStart && new Date(e.startTime) <= periodEnd)
+            .filter(e => e.focusAreaId === area.id && new Date(e.startTime) >= effectiveStart && new Date(e.startTime) <= periodEnd)
             .reduce((s, e) => s + e.duration, 0);
         const pct = totalMinutes / periodTargetMinutes;
         const gapMinutes = Math.max(0, periodTargetMinutes - totalMinutes);

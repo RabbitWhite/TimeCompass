@@ -85,7 +85,7 @@ export default function Tracking() {
         const s = secs % 60;
         return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
     };
-    const catchUpAreas = getCatchUpAreas(state.focusAreas, state.timeEntries, state.settings.gamification, state.focusAreas.length);
+    const catchUpAreas = getCatchUpAreas(state.focusAreas, state.timeEntries, state.settings.gamification, state.focusAreas.length, state.settings.periodResetDate);
     return (_jsxs("div", { children: [state.activeTracking && activeArea ? (_jsxs("div", { className: "tracker-banner", style: { background: `linear-gradient(135deg, ${activeArea.color}, ${activeArea.color}99)` }, children: [_jsx("div", { className: "tracking-label", children: "Tracking" }), _jsx("div", { className: "tracking-area", children: activeArea.name }), state.projects.filter(p => p.focusAreaId === activeArea.id).length > 0 && (_jsxs("select", { className: "tracking-project-select", value: state.activeTracking.projectId, onChange: e => dispatch({
                             type: 'START_TRACKING',
                             payload: { ...state.activeTracking, projectId: e.target.value },

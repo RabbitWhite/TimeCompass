@@ -215,16 +215,20 @@ export function getCatchUpAreas(
   timeEntries: TimeEntry[],
   settings: GamificationSettings,
   n: number,
+  periodResetDate?: string | null,
 ): Array<{ area: FocusArea; gapMinutes: number; totalMinutes: number; urgency: number }> {
   const periodIdx = getPeriodIndex(getWeekStart());
   const { start: periodStart, end: periodEnd } = getPeriodDateRange(periodIdx);
+  const effectiveStart = periodResetDate && !isNaN(new Date(periodResetDate).getTime())
+    ? new Date(periodResetDate)
+    : periodStart;
 
   const ranked = focusAreas
     .filter(a => a.weeklyTargetHours > 0)
     .map(area => {
       const periodTargetMinutes = area.weeklyTargetHours * 4 * 60;
       const totalMinutes = timeEntries
-        .filter(e => e.focusAreaId === area.id && new Date(e.startTime) >= periodStart && new Date(e.startTime) <= periodEnd)
+        .filter(e => e.focusAreaId === area.id && new Date(e.startTime) >= effectiveStart && new Date(e.startTime) <= periodEnd)
         .reduce((s, e) => s + e.duration, 0);
       const pct = totalMinutes / periodTargetMinutes;
       const gapMinutes = Math.max(0, periodTargetMinutes - totalMinutes);

@@ -5,6 +5,7 @@
 - Never push directly to Main — always use a PR
 - Run ./build-cdn.sh and verify dist/ is complete before committing
 - Never revert a PR without first auditing exactly what will be lost
+- At the start of every session, check for missions/next_mission.md — if it exists, read it and execute it
 
 ## Build Environment
 

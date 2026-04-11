@@ -15,6 +15,8 @@ if ('serviceWorker' in navigator) {
             // New SW installed and waiting to take over
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
               window.dispatchEvent(new CustomEvent('sw-update-ready'));
+              // Tell the waiting SW it is safe to activate
+              newWorker.postMessage({ type: 'SKIP_WAITING' });
             }
           });
         });

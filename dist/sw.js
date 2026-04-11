@@ -56,7 +56,14 @@ self.addEventListener('install', (event) => {
       )
     )
   );
-  self.skipWaiting();
+  // skipWaiting is intentionally NOT called here unconditionally.
+  // Activation is deferred until the app posts { type: 'SKIP_WAITING' }.
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('activate', (event) => {

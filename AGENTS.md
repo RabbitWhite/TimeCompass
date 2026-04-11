@@ -7,6 +7,17 @@
 - Never revert a PR without first auditing exactly what will be lost
 - At the start of every session, check for missions/next_mission.md — if it exists, read it and execute it
 
+## Post-Merge Checklist
+
+After any mission that touches src/, public/, or any file that feeds into the build:
+
+- The human must run bash build-cdn.sh locally after merging
+- Then commit and push dist/ with message: Rebuild dist after [mission name]
+- Never run build-cdn.sh autonomously
+- Never commit dist/ as part of a mission branch — dist/ is always rebuilt and committed separately by the human after merge
+
+This step is required for changes to go live on GitHub Pages. Forgetting it means the deployed app does not reflect the merged changes.
+
 ## Build Environment
 
 ### build-cdn.sh

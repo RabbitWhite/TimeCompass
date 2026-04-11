@@ -13,6 +13,7 @@ jobs:
       contents: write
       issues: write
       pull-requests: write
+      id-token: write
     if: |
       github.actor != 'claude[bot]' &&
       github.actor != 'github-actions[bot]' &&

@@ -1,0 +1,25 @@
+name: Claude Code Assistant
+on:
+  issue_comment:
+    types: [created]
+  issues:
+    types: [opened, assigned, labeled]
+  pull_request_review_comment:
+    types: [created]
+jobs:
+  claude:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    if: |
+      github.actor != 'claude[bot]' &&
+      github.actor != 'github-actions[bot]' &&
+      github.actor != 'dependabot[bot]'
+    steps:
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: |
+            --max-turns 30

@@ -1,10 +1,10 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '../store.js';
-import Modal from '../components/Modal.js';
-import { generateId, getIconSvg } from '../utils.js';
-import { AREA_COLORS, AREA_ICONS } from '../types.js';
+import { useApp } from '../store';
+import Modal from '../components/Modal';
+import { generateId, getIconSvg } from '../utils';
+import { AREA_COLORS, AREA_ICONS } from '../types';
 export default function FocusAreas() {
     const { state, dispatch } = useApp();
     const navigate = useNavigate();

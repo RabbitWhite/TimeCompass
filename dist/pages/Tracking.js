@@ -1,8 +1,8 @@
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import { useState, useEffect } from 'react';
-import { useApp } from '../store.js';
-import Modal from '../components/Modal.js';
-import { generateId, formatDuration, getCatchUpAreas } from '../utils.js';
+import { useApp } from '../store';
+import Modal from '../components/Modal';
+import { generateId, formatDuration, getCatchUpAreas } from '../utils';
 export default function Tracking() {
     const { state, dispatch } = useApp();
     const [elapsed, setElapsed] = useState(0);

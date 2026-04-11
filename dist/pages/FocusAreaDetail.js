@@ -1,9 +1,9 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useApp } from '../store.js';
-import Modal from '../components/Modal.js';
-import { generateId, getIconSvg, formatDuration, isThisWeek } from '../utils.js';
+import { useApp } from '../store';
+import Modal from '../components/Modal';
+import { generateId, getIconSvg, formatDuration, isThisWeek } from '../utils';
 export default function FocusAreaDetail() {
     const { id } = useParams();
     const { state, dispatch } = useApp();

@@ -2,11 +2,11 @@ import { jsx as _jsx } from "react/jsx-runtime";
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { HashRouter } from 'react-router-dom';
-import { AppProvider } from './store.js';
-import App from './App.js';
+import { AppProvider } from './store';
+import App from './App';
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register("/Lifetracker/" + 'sw.js')
+        navigator.serviceWorker.register(import.meta.env.BASE_URL + 'sw.js')
             .then((registration) => {
             registration.addEventListener('updatefound', () => {
                 const newWorker = registration.installing;
@@ -16,6 +16,8 @@ if ('serviceWorker' in navigator) {
                     // New SW installed and waiting to take over
                     if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                         window.dispatchEvent(new CustomEvent('sw-update-ready'));
+                        // Tell the waiting SW it is safe to activate
+                        newWorker.postMessage({ type: 'SKIP_WAITING' });
                     }
                 });
             });

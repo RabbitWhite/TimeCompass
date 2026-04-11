@@ -31,17 +31,21 @@ const defaultState = {
     weekTemplates: [],
     walletTransactions: [],
 };
+const SESSION_TOKEN_KEY = 'googleAccessToken';
 function loadState() {
     try {
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) {
             const parsed = JSON.parse(stored);
+            // googleAccessToken is short-lived — read from sessionStorage, not localStorage
+            const googleAccessToken = sessionStorage.getItem(SESSION_TOKEN_KEY) ?? '';
             return {
                 ...defaultState,
                 ...parsed,
                 settings: {
                     ...defaultState.settings,
                     ...parsed.settings,
+                    googleAccessToken,
                     gamification: { ...defaultState.settings.gamification, ...parsed.settings?.gamification },
                 },
                 weeklyScores: parsed.weeklyScores || [],
@@ -55,7 +59,11 @@ function loadState() {
 }
 function saveState(state) {
     try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        // Persist googleAccessToken to sessionStorage only (token is short-lived)
+        sessionStorage.setItem(SESSION_TOKEN_KEY, state.settings.googleAccessToken ?? '');
+        // Save all other state to localStorage, excluding the access token
+        const { googleAccessToken: _omit, ...otherSettings } = state.settings;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, settings: otherSettings }));
     }
     catch { /* ignore */ }
 }

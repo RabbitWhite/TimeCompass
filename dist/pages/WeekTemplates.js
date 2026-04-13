@@ -1,9 +1,9 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '../store';
-import Modal from '../components/Modal';
-import { generateId } from '../utils';
+import { useApp } from '../store.js';
+import Modal from '../components/Modal.js';
+import { generateId } from '../utils.js';
 const MAX_WEEKLY_HOURS = 24 * 7; // 168
 function buildInitialTargets(focusAreas, projects, base) {
     return focusAreas.map(area => {

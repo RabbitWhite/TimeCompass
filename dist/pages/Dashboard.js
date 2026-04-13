@@ -1,9 +1,9 @@
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '../store';
-import Modal from '../components/Modal';
-import { formatDuration, getWeekStart, calculateWeeklyScore, getPeriodIndex, getPeriodDateRange, computeMaxWeekPoints, pointsToEuros, formatEuros, generateId } from '../utils';
+import { useApp } from '../store.js';
+import Modal from '../components/Modal.js';
+import { formatDuration, getWeekStart, calculateWeeklyScore, getPeriodIndex, getPeriodDateRange, computeMaxWeekPoints, pointsToEuros, formatEuros, generateId } from '../utils.js';
 export default function Dashboard() {
     const { state, dispatch } = useApp();
     const navigate = useNavigate();

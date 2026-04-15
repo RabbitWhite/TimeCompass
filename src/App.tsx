@@ -115,7 +115,7 @@ export default function App() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `lifetracker-backup-${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `timecompass-backup-${new Date().toISOString().split('T')[0]}.json`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -142,7 +142,7 @@ export default function App() {
     <SplashScreen />
     <div className="app-layout">
       <header className="app-header">
-        <h1>LifeTracker</h1>
+        <h1>Time Compass</h1>
         <div className="header-actions">
           <button className="btn btn-ghost btn-sm" onClick={() => {
             setEditSettings({ ...state.settings.gamification });

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../store';
 
-const SPLASH_SESSION_KEY = 'lifetracker-splash-shown';
+const SPLASH_SESSION_KEY = 'timecompass-splash-shown';
 
 export default function SplashScreen() {
   const { state } = useApp();

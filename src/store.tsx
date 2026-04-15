@@ -1,7 +1,8 @@
 import { createContext, useContext, useReducer, useEffect, type ReactNode } from 'react';
 import type { AppState, AppAction, WalletTransaction } from './types';
 
-const STORAGE_KEY = 'lifetracker-state';
+const STORAGE_KEY = 'timecompass-state';
+const LEGACY_STORAGE_KEY = 'lifetracker-state';
 
 const defaultState: AppState = {
   focusAreas: [],
@@ -38,6 +39,14 @@ const SESSION_TOKEN_KEY = 'googleAccessToken';
 
 function loadState(): AppState {
   try {
+    // One-time migration: copy legacy data to new key then remove old key
+    if (!localStorage.getItem(STORAGE_KEY)) {
+      const legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
+      if (legacy) {
+        localStorage.setItem(STORAGE_KEY, legacy);
+        localStorage.removeItem(LEGACY_STORAGE_KEY);
+      }
+    }
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);

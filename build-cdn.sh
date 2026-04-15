@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "Building Lifetracker (CDN mode, no npm required)..."
+echo "Building Time Compass (CDN mode, no npm required)..."
 
 GIT_SHA=$(git rev-parse --short HEAD)
 
@@ -65,7 +65,7 @@ cp src/App.css dist/
 
 # 5. Generate sw.js with correct precache list (replaces the Vite placeholder version)
 cat > dist/sw.js << 'SWEOF'
-const CACHE_NAME = 'lifetracker-v11';
+const CACHE_NAME = 'timecompass-v11';
 const BASE = '/Lifetracker/';
 
 // Critical files: if any of these fail to cache, the SW install fails (app won't work)
@@ -196,7 +196,7 @@ SWEOF
 
 # Stamp the cache name with the current git SHA so every deploy
 # gets a fresh cache without manual version bumping.
-sed -i "s/lifetracker-v[0-9]*/lifetracker-${GIT_SHA}/" dist/sw.js
+sed -i "s/timecompass-v[0-9]*/timecompass-${GIT_SHA}/" dist/sw.js
 
 # 6. Create index.html with corrected import maps
 # - react-dom added (not just react-dom/client) for react-router-dom's internal imports
@@ -215,7 +215,7 @@ cat > dist/index.html << 'HTML'
     <link rel="manifest" href="/Lifetracker/manifest.json" />
     <link rel="apple-touch-icon" sizes="180x180" href="/Lifetracker/icon-180x180.png" />
     <link rel="stylesheet" href="/Lifetracker/App.css" />
-    <title>LifeTracker</title>
+    <title>Time Compass</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script type="importmap">
     {

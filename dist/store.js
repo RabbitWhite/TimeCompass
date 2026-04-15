@@ -156,6 +156,21 @@ function reducer(state, action) {
             return { ...state, walletTransactions: [action.payload, ...state.walletTransactions] };
         case 'UPDATE_WALLET_SETTINGS':
             return { ...state, settings: { ...state.settings, ...action.payload } };
+        case 'HARD_RESET':
+            return {
+                ...state,
+                timeEntries: [],
+                calendarEvents: [],
+                weeklyScores: [],
+                walletTransactions: [],
+                activeTracking: null,
+                settings: {
+                    ...state.settings,
+                    walletBalance: 0,
+                    lastCreditedPeriodIndex: -1,
+                    periodResetDate: null,
+                },
+            };
         default:
             return state;
     }

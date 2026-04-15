@@ -27,6 +27,7 @@ export default function App() {
   });
   const [swUpdateReady, setSwUpdateReady] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showHardResetConfirm, setShowHardResetConfirm] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Persist current week's score whenever it changes (moved from Gamification.tsx)
@@ -216,7 +217,7 @@ export default function App() {
       )}
 
       {showGameSettings && (
-        <Modal title="Reward Settings" onClose={() => { setShowGameSettings(false); setShowResetConfirm(false); }}>
+        <Modal title="Reward Settings" onClose={() => { setShowGameSettings(false); setShowResetConfirm(false); setShowHardResetConfirm(false); }}>
           <div className="form-group">
             <label className="form-label">Monthly reward budget (€)</label>
             <input
@@ -427,6 +428,51 @@ export default function App() {
               />
             </div>
           )}
+          <div style={{ marginTop: 24, borderTop: '1px solid var(--error)', paddingTop: 16 }}>
+            <div className="form-label" style={{ color: 'var(--error)', marginBottom: 12 }}>
+              Danger Zone
+            </div>
+            {!showHardResetConfirm ? (
+              <button
+                className="btn btn-sm"
+                style={{ background: 'var(--error)', color: '#fff', borderColor: 'var(--error)' }}
+                onClick={() => { exportData(); setShowHardResetConfirm(true); }}
+                type="button"
+              >
+                Hard Reset
+              </button>
+            ) : (
+              <div style={{ background: 'var(--surface-alt, var(--surface))', borderRadius: 8, padding: 12, border: '1px solid var(--error)' }}>
+                <div className="text-sm" style={{ marginBottom: 8 }}>
+                  <strong>All tracking history, scores, wallet transactions and wallet balance will be permanently deleted.</strong>
+                </div>
+                <div className="text-sm text-secondary" style={{ marginBottom: 12 }}>
+                  Your focus areas, projects, templates and settings are preserved. A backup has been downloaded.
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => setShowHardResetConfirm(false)}
+                    type="button"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="btn btn-sm"
+                    style={{ background: 'var(--error)', color: '#fff', borderColor: 'var(--error)' }}
+                    onClick={() => {
+                      dispatch({ type: 'HARD_RESET' });
+                      setShowHardResetConfirm(false);
+                      setShowGameSettings(false);
+                    }}
+                    type="button"
+                  >
+                    Delete all history
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
           <div className="modal-actions">
             <button className="btn btn-secondary" onClick={() => setShowGameSettings(false)}>Cancel</button>
             <button className="btn btn-primary" onClick={saveGameSettings}>Save</button>

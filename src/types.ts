@@ -153,7 +153,8 @@ export type AppAction =
   | { type: 'DELETE_WEEK_TEMPLATE'; payload: string }
   | { type: 'APPLY_WEEK_TEMPLATE'; payload: string }
   | { type: 'ADD_WALLET_TRANSACTION'; payload: WalletTransaction }
-  | { type: 'UPDATE_WALLET_SETTINGS'; payload: Partial<AppSettings> };
+  | { type: 'UPDATE_WALLET_SETTINGS'; payload: Partial<AppSettings> }
+  | { type: 'HARD_RESET' };
 
 export const AREA_ICONS = [
   'code', 'camera', 'book', 'music', 'brush', 'fitness',

@@ -6,8 +6,8 @@
   "id": "/Lifetracker/",
   "scope": "/Lifetracker/",
   "display": "standalone",
-  "background_color": "#0f0f1a",
-  "theme_color": "#6c63ff",
+  "background_color": "#f0e6d0",
+  "theme_color": "#c9963a",
   "orientation": "portrait",
   "icons": [
     {

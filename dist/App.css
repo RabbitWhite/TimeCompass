@@ -1,18 +1,20 @@
 /* === Variables === */
 :root {
-  --bg: rgba(15, 15, 26, 0.55);
-  --surface: rgba(26, 26, 50, 0.86);
-  --surface-elevated: rgba(44, 44, 78, 0.95);
-  --surface-hover: rgba(56, 56, 90, 0.97);
-  --primary: #6c63ff;
-  --primary-dim: rgba(108, 99, 255, 0.15);
-  --text: #ffffff;
-  --text-secondary: #ede9ff;
-  --text-muted: #c8c0ff;
-  --border: rgba(255, 255, 255, 0.18);
-  --success: #4caf50;
-  --warning: #f5a623;
-  --error: #ef5350;
+  --bg: #f0e6d0;
+  --surface: #e8d9be;
+  --surface-alt: #ddd0aa;
+  --surface-elevated: #d4c4a0;
+  --surface-hover: #cbb890;
+  --primary: #c9963a;
+  --primary-hover: #b8832a;
+  --primary-dim: rgba(201, 150, 58, 0.15);
+  --text: #3d2b1f;
+  --text-secondary: #6b4c35;
+  --text-muted: #9b7b5a;
+  --border: #c4a882;
+  --success: #5a7a5a;
+  --warning: #c9963a;
+  --error: #8b3a2a;
   --radius: 14px;
   --radius-sm: 10px;
   --nav-height: 64px;
@@ -25,9 +27,10 @@
 html, body, #root { height: 100%; width: 100%; overflow: hidden; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background-color: #0b1120;
+  background-color: #f0e6d0;
   background-image: url('/Lifetracker/background.png');
   background-size: cover;
+  background-attachment: fixed;
   background-position: center top;
   color: var(--text);
   -webkit-font-smoothing: antialiased;

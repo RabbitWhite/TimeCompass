@@ -104,7 +104,7 @@ export default function App() {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `lifetracker-backup-${new Date().toISOString().split('T')[0]}.json`;
+        link.download = `timecompass-backup-${new Date().toISOString().split('T')[0]}.json`;
         link.click();
         URL.revokeObjectURL(url);
     };
@@ -127,7 +127,7 @@ export default function App() {
         if (fileRef.current)
             fileRef.current.value = '';
     };
-    return (_jsxs(_Fragment, { children: [_jsx(SplashScreen, {}), _jsxs("div", { className: "app-layout", children: [_jsxs("header", { className: "app-header", children: [_jsx("h1", { children: "LifeTracker" }), _jsxs("div", { className: "header-actions", children: [_jsx("button", { className: "btn btn-ghost btn-sm", onClick: () => {
+    return (_jsxs(_Fragment, { children: [_jsx(SplashScreen, {}), _jsxs("div", { className: "app-layout", children: [_jsxs("header", { className: "app-header", children: [_jsx("h1", { children: "Time Compass" }), _jsxs("div", { className: "header-actions", children: [_jsx("button", { className: "btn btn-ghost btn-sm", onClick: () => {
                                             setEditSettings({ ...state.settings.gamification });
                                             setEditSplash({
                                                 splashPhilosophyText: state.settings.splashPhilosophyText,

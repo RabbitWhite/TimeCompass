@@ -2,6 +2,8 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../store.js';
 const SPLASH_SESSION_KEY = 'timecompass-splash-shown';
+const COVER_PHASE_MS = 1500;
+const MIN_DISPLAY_MS = 2000;
 export default function SplashScreen() {
     const { state } = useApp();
     const { splashPhilosophyText, splashPrizeImage, splashDismissMode, splashDuration } = state.settings;
@@ -12,6 +14,8 @@ export default function SplashScreen() {
         return true;
     });
     const [fading, setFading] = useState(false);
+    const [contentVisible, setContentVisible] = useState(false);
+    const [tapEnabled, setTapEnabled] = useState(false);
     const dismiss = useCallback(() => {
         if (fading)
             return;
@@ -21,14 +25,25 @@ export default function SplashScreen() {
     useEffect(() => {
         if (!visible)
             return;
+        const contentTimer = setTimeout(() => setContentVisible(true), COVER_PHASE_MS);
+        const tapTimer = setTimeout(() => setTapEnabled(true), COVER_PHASE_MS);
         if (splashDismissMode === 'timed') {
-            const fadeTimer = setTimeout(() => dismiss(), splashDuration * 1000);
-            return () => clearTimeout(fadeTimer);
+            const duration = Math.max(splashDuration * 1000, MIN_DISPLAY_MS);
+            const fadeTimer = setTimeout(() => dismiss(), duration);
+            return () => {
+                clearTimeout(contentTimer);
+                clearTimeout(tapTimer);
+                clearTimeout(fadeTimer);
+            };
         }
+        return () => {
+            clearTimeout(contentTimer);
+            clearTimeout(tapTimer);
+        };
     }, [visible, splashDismissMode, splashDuration, dismiss]);
     if (!visible)
         return null;
-    return (_jsxs("div", { onClick: splashDismissMode === 'tap' ? dismiss : undefined, style: {
+    return (_jsxs("div", { onClick: splashDismissMode === 'tap' && tapEnabled ? dismiss : undefined, style: {
             position: 'fixed', inset: 0, zIndex: 9999,
             background: 'linear-gradient(135deg, rgba(30,20,60,0.97) 0%, rgba(15,10,30,0.97) 100%)',
             display: 'flex', flexDirection: 'column',
@@ -36,16 +51,29 @@ export default function SplashScreen() {
             padding: '2rem',
             opacity: fading ? 0 : 1,
             transition: 'opacity 0.5s ease',
-            cursor: splashDismissMode === 'tap' ? 'pointer' : 'default',
-        }, children: [splashPhilosophyText && (_jsx("p", { style: {
-                    fontSize: 16, lineHeight: 1.7,
-                    textAlign: 'center', maxWidth: 480,
-                    whiteSpace: 'pre-wrap', marginBottom: splashPrizeImage ? '1.5rem' : 0,
-                }, children: splashPhilosophyText })), splashPrizeImage && (_jsx("img", { src: splashPrizeImage, alt: "Prize", style: {
-                    maxHeight: '60vh', maxWidth: '100%',
-                    objectFit: 'contain', borderRadius: 8,
-                } })), splashDismissMode === 'tap' && (_jsx("p", { style: {
+            cursor: splashDismissMode === 'tap' && tapEnabled ? 'pointer' : 'default',
+            overflow: 'hidden',
+        }, children: [_jsx("img", { src: "/Lifetracker/cover.png", alt: "", style: {
+                    position: 'absolute', inset: 0,
+                    width: '100%', height: '100%',
+                    objectFit: 'cover',
+                } }), _jsxs("div", { style: {
+                    position: 'relative', zIndex: 1,
+                    display: 'flex', flexDirection: 'column',
+                    alignItems: 'center',
+                    opacity: contentVisible ? 1 : 0,
+                    transition: 'opacity 0.5s ease',
+                }, children: [splashPhilosophyText && (_jsx("p", { style: {
+                            fontSize: 16, lineHeight: 1.7,
+                            textAlign: 'center', maxWidth: 480,
+                            whiteSpace: 'pre-wrap', marginBottom: splashPrizeImage ? '1.5rem' : 0,
+                        }, children: splashPhilosophyText })), splashPrizeImage && (_jsx("img", { src: splashPrizeImage, alt: "Prize", style: {
+                            maxHeight: '60vh', maxWidth: '100%',
+                            objectFit: 'contain', borderRadius: 8,
+                        } }))] }), splashDismissMode === 'tap' && (_jsx("p", { style: {
                     position: 'absolute', bottom: '1.5rem',
-                    fontSize: 13, opacity: 0.45, margin: 0,
-                }, children: "tap anywhere to continue" }))] }));
+                    fontSize: 13, opacity: tapEnabled ? 0.45 : 0, margin: 0,
+                    transition: 'opacity 0.5s ease',
+                    zIndex: 1,
+                }, children: "tap anywhere to continue" })), splashDismissMode === 'tap' && !tapEnabled && (_jsx("div", { style: { position: 'absolute', inset: 0, zIndex: 2, cursor: 'default' }, onClick: e => e.stopPropagation() }))] }));
 }

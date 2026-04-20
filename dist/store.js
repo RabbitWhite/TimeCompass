@@ -33,6 +33,7 @@ const defaultState = {
     walletTransactions: [],
 };
 const SESSION_TOKEN_KEY = 'googleAccessToken';
+let loadFailed = false;
 function loadState() {
     try {
         // One-time migration: copy legacy data to new key then remove old key
@@ -45,10 +46,18 @@ function loadState() {
         }
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) {
-            const parsed = JSON.parse(stored);
+            let parsed;
+            try {
+                parsed = JSON.parse(stored);
+            }
+            catch (err) {
+                console.error('[store] Failed to parse stored state — preserving raw localStorage data untouched.', err);
+                loadFailed = true;
+                return defaultState;
+            }
             // googleAccessToken is short-lived — read from sessionStorage, not localStorage
             const googleAccessToken = sessionStorage.getItem(SESSION_TOKEN_KEY) ?? '';
-            return {
+            const loaded = {
                 ...defaultState,
                 ...parsed,
                 settings: {
@@ -61,9 +70,14 @@ function loadState() {
                 weekTemplates: parsed.weekTemplates || [],
                 walletTransactions: parsed.walletTransactions || [],
             };
+            console.log(`[store] Loaded state: ${loaded.focusAreas.length} focusAreas, ${loaded.timeEntries.length} timeEntries`);
+            return loaded;
         }
     }
-    catch { /* ignore */ }
+    catch (err) {
+        console.error('[store] Unexpected error in loadState — preserving localStorage untouched.', err);
+        loadFailed = true;
+    }
     return defaultState;
 }
 function saveState(state) {
@@ -188,7 +202,9 @@ const AppContext = createContext(null);
 export function AppProvider({ children }) {
     const [state, dispatch] = useReducer(reducer, null, loadState);
     useEffect(() => {
-        saveState(state);
+        if (!loadFailed) {
+            saveState(state);
+        }
     }, [state]);
     return (_jsx(AppContext.Provider, { value: { state, dispatch }, children: children }));
 }

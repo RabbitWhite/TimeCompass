@@ -11,7 +11,7 @@ import Modal from './components/Modal';
 import SplashScreen from './components/SplashScreen';
 import { useApp } from './store';
 import { calculateWeeklyScore, getWeekStart, getPeriodIndex, getPeriodDateRange, computeMaxWeekPoints, getCompletedPeriodEuros, pointsToEuros, formatEuros, generateId } from './utils';
-import type { GamificationSettings, AppSettings, WalletTransaction } from './types';
+import type { AppState, GamificationSettings, AppSettings, WalletTransaction } from './types';
 import './App.css';
 
 export default function App() {
@@ -29,6 +29,8 @@ export default function App() {
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showHardResetConfirm, setShowHardResetConfirm] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [importPending, setImportPending] = useState<AppState | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
 
   // Persist current week's score whenever it changes (moved from Gamification.tsx)
   const currentWeekStart = useMemo(() => getWeekStart(), []);
@@ -127,14 +129,29 @@ export default function App() {
     reader.onload = () => {
       try {
         const data = JSON.parse(reader.result as string);
-        if (data.focusAreas && data.timeEntries) {
-          dispatch({ type: 'LOAD_STATE', payload: data });
-          setShowData(false);
+        if (!Array.isArray(data.focusAreas) || data.focusAreas.length === 0) {
+          setImportError('This file contains no focus areas. It may be empty or not a valid Time Compass backup. Import cancelled to protect your existing data.');
+          return;
         }
-      } catch { /* invalid file */ }
+        if (!Array.isArray(data.timeEntries)) {
+          setImportError('This file is missing required fields. Import cancelled to protect your existing data.');
+          return;
+        }
+        setImportPending(data as AppState);
+      } catch {
+        setImportError('This file could not be parsed. It may be corrupted or not a valid JSON backup.');
+      }
     };
     reader.readAsText(file);
     if (fileRef.current) fileRef.current.value = '';
+  };
+
+  const confirmImport = () => {
+    if (!importPending) return;
+    exportData();
+    dispatch({ type: 'LOAD_STATE', payload: importPending });
+    setImportPending(null);
+    setShowData(false);
   };
 
   return (
@@ -187,22 +204,58 @@ export default function App() {
       <BottomNav />
 
       {showData && (
-        <Modal title="Data Management" onClose={() => setShowData(false)}>
-          <p className="text-secondary text-sm mb-16">
-            Your data is stored in the browser. Export a backup to keep it safe across cache clears.
-          </p>
-          <button className="btn btn-primary btn-block mb-16" onClick={exportData}>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-              <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
-            </svg>
-            Export Backup (JSON)
-          </button>
-          <button className="btn btn-secondary btn-block" onClick={() => fileRef.current?.click()}>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-              <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z" />
-            </svg>
-            Import Backup
-          </button>
+        <Modal title="Data Management" onClose={() => { setShowData(false); setImportPending(null); setImportError(null); }}>
+          {importError ? (
+            <div style={{ background: 'var(--surface-alt, var(--surface))', borderRadius: 8, padding: 12, border: '1px solid var(--error)', marginBottom: 16 }}>
+              <div className="text-sm" style={{ color: 'var(--error)', marginBottom: 8 }}><strong>Import failed</strong></div>
+              <div className="text-sm" style={{ marginBottom: 12 }}>{importError}</div>
+              <button className="btn btn-secondary btn-sm" onClick={() => setImportError(null)}>Dismiss</button>
+            </div>
+          ) : importPending ? (
+            <div style={{ background: 'var(--surface-alt, var(--surface))', borderRadius: 8, padding: 12, border: '1px solid var(--warning, #f59e0b)' }}>
+              <div className="text-sm" style={{ marginBottom: 12 }}><strong>Review before importing</strong></div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '4px 16px', marginBottom: 12, fontSize: 13 }}>
+                <span />                           <strong>Current</strong>                     <strong>File</strong>
+                <span>Focus areas</span>           <span>{state.focusAreas.length}</span>        <span>{(importPending.focusAreas as unknown[]).length}</span>
+                <span>Time entries</span>          <span>{state.timeEntries.length}</span>       <span>{(importPending.timeEntries as unknown[]).length}</span>
+                <span>Wallet transactions</span>   <span>{state.walletTransactions.length}</span> <span>{Array.isArray(importPending.walletTransactions) ? importPending.walletTransactions.length : 0}</span>
+              </div>
+              <div className="text-sm" style={{ marginBottom: 12 }}>
+                <strong>Importing will permanently replace all current data.</strong> Your current state will be downloaded as a backup file automatically before importing.
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn btn-secondary btn-sm" onClick={() => setImportPending(null)}>Cancel</button>
+                <button
+                  className="btn btn-sm"
+                  style={{ background: 'var(--error)', color: '#fff', borderColor: 'var(--error)' }}
+                  onClick={confirmImport}
+                >
+                  Download backup &amp; import
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className="text-secondary text-sm mb-16">
+                Your data is stored in the browser. Export a backup to keep it safe across cache clears.
+              </p>
+              <button className="btn btn-primary btn-block mb-16" onClick={exportData}>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                  <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
+                </svg>
+                Export Backup (JSON)
+              </button>
+              <button className="btn btn-secondary btn-block" onClick={() => fileRef.current?.click()}>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                  <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z" />
+                </svg>
+                Import Backup
+              </button>
+              <p className="text-secondary text-sm mt-16" style={{ fontSize: 11 }}>
+                Tip: Export regularly so you can restore after clearing browser data.
+              </p>
+            </>
+          )}
           <input
             ref={fileRef}
             type="file"
@@ -210,9 +263,6 @@ export default function App() {
             style={{ display: 'none' }}
             onChange={importData}
           />
-          <p className="text-secondary text-sm mt-16" style={{ fontSize: 11 }}>
-            Tip: Export regularly so you can restore after clearing browser data.
-          </p>
         </Modal>
       )}
 

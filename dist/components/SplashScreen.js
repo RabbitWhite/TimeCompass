@@ -57,6 +57,10 @@ export default function SplashScreen() {
                     position: 'absolute', inset: 0,
                     width: '100%', height: '100%',
                     objectFit: 'cover',
+                } }), _jsx("div", { style: {
+                    position: 'absolute', inset: 0,
+                    background: 'rgba(0,0,0,0.45)',
+                    zIndex: 0,
                 } }), _jsxs("div", { style: {
                     position: 'relative', zIndex: 1,
                     display: 'flex', flexDirection: 'column',

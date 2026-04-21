@@ -578,6 +578,7 @@ a { color: var(--primary); text-decoration: none; }
   color: var(--text);
   cursor: pointer;
   transition: all 0.2s;
+  overflow: hidden;
 }
 .quick-btn:active { background: var(--surface-hover); }
 .quick-btn .area-dot {
@@ -587,6 +588,7 @@ a { color: var(--primary); text-decoration: none; }
   flex-shrink: 0;
 }
 .quick-btn span { font-size: 14px; font-weight: 600; }
+.quick-btn .truncate { min-width: 0; flex: 1; max-width: 100%; }
 
 /* === Allocation === */
 .allocation-bar {

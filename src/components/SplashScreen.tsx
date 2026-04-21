@@ -88,6 +88,7 @@ export default function SplashScreen() {
           <p style={{
             fontSize: 16, lineHeight: 1.7,
             textAlign: 'center', maxWidth: 480,
+            color: '#f5e6c8',
             whiteSpace: 'pre-wrap', marginBottom: splashPrizeImage ? '1.5rem' : 0,
           }}>
             {splashPhilosophyText}
@@ -107,7 +108,7 @@ export default function SplashScreen() {
       {splashDismissMode === 'tap' && (
         <p style={{
           position: 'absolute', bottom: '1.5rem',
-          fontSize: 13, opacity: tapEnabled ? 0.45 : 0, margin: 0,
+          fontSize: 13, color: '#f5e6c8', opacity: tapEnabled ? 0.7 : 0, margin: 0,
           transition: 'opacity 0.5s ease',
           zIndex: 1,
         }}>

@@ -70,13 +70,14 @@ export default function SplashScreen() {
                 }, children: [splashPhilosophyText && (_jsx("p", { style: {
                             fontSize: 16, lineHeight: 1.7,
                             textAlign: 'center', maxWidth: 480,
+                            color: '#f5e6c8',
                             whiteSpace: 'pre-wrap', marginBottom: splashPrizeImage ? '1.5rem' : 0,
                         }, children: splashPhilosophyText })), splashPrizeImage && (_jsx("img", { src: splashPrizeImage, alt: "Prize", style: {
                             maxHeight: '60vh', maxWidth: '100%',
                             objectFit: 'contain', borderRadius: 8,
                         } }))] }), splashDismissMode === 'tap' && (_jsx("p", { style: {
                     position: 'absolute', bottom: '1.5rem',
-                    fontSize: 13, opacity: tapEnabled ? 0.45 : 0, margin: 0,
+                    fontSize: 13, color: '#f5e6c8', opacity: tapEnabled ? 0.7 : 0, margin: 0,
                     transition: 'opacity 0.5s ease',
                     zIndex: 1,
                 }, children: "tap anywhere to continue" })), splashDismissMode === 'tap' && !tapEnabled && (_jsx("div", { style: { position: 'absolute', inset: 0, zIndex: 2, cursor: 'default' }, onClick: e => e.stopPropagation() }))] }));

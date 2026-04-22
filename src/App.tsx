@@ -11,6 +11,7 @@ import Modal from './components/Modal';
 import SplashScreen from './components/SplashScreen';
 import { useApp } from './store';
 import { calculateWeeklyScore, getWeekStart, getPeriodIndex, getPeriodDateRange, computeMaxWeekPoints, getCompletedPeriodEuros, pointsToEuros, formatEuros, generateId } from './utils';
+import { getDriveToken, syncToDrive } from './utils/driveSync';
 import type { AppState, GamificationSettings, AppSettings, WalletTransaction } from './types';
 import './App.css';
 
@@ -104,6 +105,40 @@ export default function App() {
     window.addEventListener('sw-update-ready', handler);
     return () => window.removeEventListener('sw-update-ready', handler);
   }, []);
+
+  // Keep a ref so the visibilitychange handler always sees current state
+  const stateRef = useRef(state);
+  useEffect(() => { stateRef.current = state; }, [state]);
+
+  useEffect(() => {
+    if (!state.settings.driveBackupEnabled) return;
+
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState !== 'hidden') return;
+      const token = getDriveToken();
+      if (!token) return;
+
+      const s = stateRef.current;
+      const { lastSavedTimestamp, settings: { driveLastSynced, driveFileId } } = s;
+
+      // Only upload if local state is newer than last Drive sync
+      const hasUnsavedDiff =
+        !driveLastSynced ||
+        (lastSavedTimestamp != null && new Date(lastSavedTimestamp) > new Date(driveLastSynced));
+      if (!hasUnsavedDiff) return;
+
+      const newFileId = await syncToDrive(token, s, driveFileId);
+      if (newFileId) {
+        dispatch({
+          type: 'UPDATE_SETTINGS',
+          payload: { driveLastSynced: new Date().toISOString(), driveFileId: newFileId },
+        });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [state.settings.driveBackupEnabled, dispatch]);
 
   const saveGameSettings = () => {
     dispatch({ type: 'UPDATE_GAMIFICATION_SETTINGS', payload: editSettings });

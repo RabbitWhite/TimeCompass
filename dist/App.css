@@ -95,6 +95,32 @@ a { color: var(--primary); text-decoration: none; }
   min-height: 28px;
   white-space: nowrap;
 }
+.reauth-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: var(--warning);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.reauth-banner-btn {
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.4);
+  padding: 4px 12px;
+  font-size: 12px;
+  min-height: 28px;
+  white-space: nowrap;
+}
+.reauth-banner-hint {
+  font-size: 12px;
+  opacity: 0.85;
+  white-space: nowrap;
+}
 
 /* === Splash Screen === */
 .splash-screen {

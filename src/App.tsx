@@ -11,6 +11,7 @@ import Modal from './components/Modal';
 import SplashScreen from './components/SplashScreen';
 import { useApp } from './store';
 import { calculateWeeklyScore, getWeekStart, getPeriodIndex, getPeriodDateRange, computeMaxWeekPoints, getCompletedPeriodEuros, pointsToEuros, formatEuros, generateId } from './utils';
+import { getDriveToken, syncToDrive } from './utils/driveSync';
 import type { AppState, GamificationSettings, AppSettings, WalletTransaction } from './types';
 import './App.css';
 
@@ -28,6 +29,10 @@ export default function App() {
   const [swUpdateReady, setSwUpdateReady] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showHardResetConfirm, setShowHardResetConfirm] = useState(false);
+  const [editDriveEnabled, setEditDriveEnabled] = useState(state.settings.driveBackupEnabled);
+  const [driveNeedsReauth, setDriveNeedsReauth] = useState(
+    () => state.settings.driveBackupEnabled && !getDriveToken()
+  );
   const fileRef = useRef<HTMLInputElement>(null);
   const [importPending, setImportPending] = useState<AppState | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
@@ -105,9 +110,64 @@ export default function App() {
     return () => window.removeEventListener('sw-update-ready', handler);
   }, []);
 
+  useEffect(() => {
+    setDriveNeedsReauth(state.settings.driveBackupEnabled && !getDriveToken());
+  }, [state.settings.driveBackupEnabled]);
+
+  const reauthDrive = () => {
+    const clientId = state.settings.googleClientId;
+    if (!clientId) return;
+    try {
+      const tokenClient = (window as any).google?.accounts?.oauth2?.initTokenClient({
+        client_id: clientId,
+        scope: 'https://www.googleapis.com/auth/drive.appdata',
+        callback: (response: any) => {
+          if (response.error) return;
+          dispatch({ type: 'UPDATE_SETTINGS', payload: { googleAccessToken: response.access_token } });
+          setDriveNeedsReauth(false);
+        },
+      });
+      tokenClient?.requestAccessToken();
+    } catch { /* Google Identity Services not loaded */ }
+  };
+
+  // Keep a ref so the visibilitychange handler always sees current state
+  const stateRef = useRef(state);
+  useEffect(() => { stateRef.current = state; }, [state]);
+
+  useEffect(() => {
+    if (!state.settings.driveBackupEnabled) return;
+
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState !== 'hidden') return;
+      const token = getDriveToken();
+      if (!token) return;
+
+      const s = stateRef.current;
+      const { lastSavedTimestamp, settings: { driveLastSynced, driveFileId } } = s;
+
+      // Only upload if local state is newer than last Drive sync
+      const hasUnsavedDiff =
+        !driveLastSynced ||
+        (lastSavedTimestamp != null && new Date(lastSavedTimestamp) > new Date(driveLastSynced));
+      if (!hasUnsavedDiff) return;
+
+      const newFileId = await syncToDrive(token, s, driveFileId);
+      if (newFileId) {
+        dispatch({
+          type: 'UPDATE_SETTINGS',
+          payload: { driveLastSynced: new Date().toISOString(), driveFileId: newFileId },
+        });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [state.settings.driveBackupEnabled, dispatch]);
+
   const saveGameSettings = () => {
     dispatch({ type: 'UPDATE_GAMIFICATION_SETTINGS', payload: editSettings });
-    dispatch({ type: 'UPDATE_SETTINGS', payload: editSplash });
+    dispatch({ type: 'UPDATE_SETTINGS', payload: { ...editSplash, driveBackupEnabled: editDriveEnabled } });
     setShowGameSettings(false);
   };
 
@@ -169,6 +229,7 @@ export default function App() {
               splashDismissMode: state.settings.splashDismissMode,
               splashDuration: state.settings.splashDuration,
             });
+            setEditDriveEnabled(state.settings.driveBackupEnabled);
             setShowGameSettings(true);
           }}>
             <svg viewBox="0 0 24 24" width="24" height="24" fill="#f5e6c8">
@@ -188,6 +249,18 @@ export default function App() {
           <button className="btn btn-sm" onClick={() => window.location.reload()}>
             Update
           </button>
+        </div>
+      )}
+      {driveNeedsReauth && (
+        <div className="reauth-banner">
+          <span>Drive backup needs reconnection</span>
+          {state.settings.googleClientId ? (
+            <button className="btn btn-sm reauth-banner-btn" onClick={reauthDrive}>
+              Sign in
+            </button>
+          ) : (
+            <span className="reauth-banner-hint">Set a Client ID in Timeline</span>
+          )}
         </div>
       )}
       <main className="app-content">
@@ -478,6 +551,28 @@ export default function App() {
               />
             </div>
           )}
+          <div style={{ marginTop: 24, borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+            <div className="form-label" style={{ marginBottom: 12 }}>Cloud Backup</div>
+            <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              Back up to Google Drive
+              <button
+                className={`toggle-btn ${editDriveEnabled ? 'on' : ''}`}
+                onClick={() => setEditDriveEnabled(e => !e)}
+                type="button"
+              >
+                <span className="toggle-knob" />
+              </button>
+            </label>
+            <div className="text-secondary text-sm" style={{ marginBottom: 4 }}>
+              Saves to Drive's hidden app folder when you leave the app. Requires Google sign-in via Timeline.
+            </div>
+            {state.settings.driveLastSynced && (
+              <div className="text-secondary text-sm">
+                Last synced: {new Date(state.settings.driveLastSynced).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              </div>
+            )}
+          </div>
+
           <div style={{ marginTop: 24, borderTop: '1px solid var(--error)', paddingTop: 16 }}>
             <div className="form-label" style={{ color: 'var(--error)', marginBottom: 12 }}>
               Danger Zone

@@ -29,6 +29,9 @@ export default function App() {
   const [swUpdateReady, setSwUpdateReady] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showHardResetConfirm, setShowHardResetConfirm] = useState(false);
+  const [driveNeedsReauth, setDriveNeedsReauth] = useState(
+    () => state.settings.driveBackupEnabled && !getDriveToken()
+  );
   const fileRef = useRef<HTMLInputElement>(null);
   const [importPending, setImportPending] = useState<AppState | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
@@ -105,6 +108,27 @@ export default function App() {
     window.addEventListener('sw-update-ready', handler);
     return () => window.removeEventListener('sw-update-ready', handler);
   }, []);
+
+  useEffect(() => {
+    setDriveNeedsReauth(state.settings.driveBackupEnabled && !getDriveToken());
+  }, [state.settings.driveBackupEnabled]);
+
+  const reauthDrive = () => {
+    const clientId = state.settings.googleClientId;
+    if (!clientId) return;
+    try {
+      const tokenClient = (window as any).google?.accounts?.oauth2?.initTokenClient({
+        client_id: clientId,
+        scope: 'https://www.googleapis.com/auth/drive.appdata',
+        callback: (response: any) => {
+          if (response.error) return;
+          dispatch({ type: 'UPDATE_SETTINGS', payload: { googleAccessToken: response.access_token } });
+          setDriveNeedsReauth(false);
+        },
+      });
+      tokenClient?.requestAccessToken();
+    } catch { /* Google Identity Services not loaded */ }
+  };
 
   // Keep a ref so the visibilitychange handler always sees current state
   const stateRef = useRef(state);
@@ -223,6 +247,18 @@ export default function App() {
           <button className="btn btn-sm" onClick={() => window.location.reload()}>
             Update
           </button>
+        </div>
+      )}
+      {driveNeedsReauth && (
+        <div className="reauth-banner">
+          <span>Drive backup needs reconnection</span>
+          {state.settings.googleClientId ? (
+            <button className="btn btn-sm reauth-banner-btn" onClick={reauthDrive}>
+              Sign in
+            </button>
+          ) : (
+            <span className="reauth-banner-hint">Set a Client ID in Timeline</span>
+          )}
         </div>
       )}
       <main className="app-content">

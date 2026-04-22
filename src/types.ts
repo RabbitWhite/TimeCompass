@@ -115,6 +115,9 @@ export interface AppSettings {
   walletBalance: number;
   lastCreditedPeriodIndex: number;
   periodResetDate: string | null;
+  driveBackupEnabled: boolean;
+  driveLastSynced: string | null;
+  driveFileId: string | null;
 }
 
 export interface AppState {
@@ -127,6 +130,7 @@ export interface AppState {
   weeklyScores: WeeklyScore[];
   weekTemplates: WeekTemplate[];
   walletTransactions: WalletTransaction[];
+  lastSavedTimestamp: string | null;
 }
 
 export type AppAction =

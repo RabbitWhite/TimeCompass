@@ -73,7 +73,7 @@ export default function Timeline() {
         try {
             const tokenClient = window.google?.accounts?.oauth2?.initTokenClient({
                 client_id: clientId.trim(),
-                scope: 'https://www.googleapis.com/auth/calendar.readonly',
+                scope: 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/drive.appdata',
                 callback: async (response) => {
                     if (response.error)
                         return;

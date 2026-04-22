@@ -29,10 +29,14 @@ const defaultState: AppState = {
     walletBalance: 0,
     lastCreditedPeriodIndex: -1,
     periodResetDate: null,
+    driveBackupEnabled: false,
+    driveLastSynced: null,
+    driveFileId: null,
   },
   weeklyScores: [],
   weekTemplates: [],
   walletTransactions: [],
+  lastSavedTimestamp: null,
 };
 
 const SESSION_TOKEN_KEY = 'googleAccessToken';
@@ -90,7 +94,12 @@ function saveState(state: AppState) {
     sessionStorage.setItem(SESSION_TOKEN_KEY, state.settings.googleAccessToken ?? '');
     // Save all other state to localStorage, excluding the access token
     const { googleAccessToken: _omit, ...otherSettings } = state.settings;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, settings: otherSettings }));
+    const now = new Date().toISOString();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      ...state,
+      settings: otherSettings,
+      lastSavedTimestamp: now,
+    }));
   } catch { /* ignore */ }
 }
 

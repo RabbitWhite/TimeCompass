@@ -29,6 +29,7 @@ export default function App() {
   const [swUpdateReady, setSwUpdateReady] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showHardResetConfirm, setShowHardResetConfirm] = useState(false);
+  const [editDriveEnabled, setEditDriveEnabled] = useState(state.settings.driveBackupEnabled);
   const [driveNeedsReauth, setDriveNeedsReauth] = useState(
     () => state.settings.driveBackupEnabled && !getDriveToken()
   );
@@ -166,7 +167,7 @@ export default function App() {
 
   const saveGameSettings = () => {
     dispatch({ type: 'UPDATE_GAMIFICATION_SETTINGS', payload: editSettings });
-    dispatch({ type: 'UPDATE_SETTINGS', payload: editSplash });
+    dispatch({ type: 'UPDATE_SETTINGS', payload: { ...editSplash, driveBackupEnabled: editDriveEnabled } });
     setShowGameSettings(false);
   };
 
@@ -228,6 +229,7 @@ export default function App() {
               splashDismissMode: state.settings.splashDismissMode,
               splashDuration: state.settings.splashDuration,
             });
+            setEditDriveEnabled(state.settings.driveBackupEnabled);
             setShowGameSettings(true);
           }}>
             <svg viewBox="0 0 24 24" width="24" height="24" fill="#f5e6c8">
@@ -549,6 +551,28 @@ export default function App() {
               />
             </div>
           )}
+          <div style={{ marginTop: 24, borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+            <div className="form-label" style={{ marginBottom: 12 }}>Cloud Backup</div>
+            <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              Back up to Google Drive
+              <button
+                className={`toggle-btn ${editDriveEnabled ? 'on' : ''}`}
+                onClick={() => setEditDriveEnabled(e => !e)}
+                type="button"
+              >
+                <span className="toggle-knob" />
+              </button>
+            </label>
+            <div className="text-secondary text-sm" style={{ marginBottom: 4 }}>
+              Saves to Drive's hidden app folder when you leave the app. Requires Google sign-in via Timeline.
+            </div>
+            {state.settings.driveLastSynced && (
+              <div className="text-secondary text-sm">
+                Last synced: {new Date(state.settings.driveLastSynced).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              </div>
+            )}
+          </div>
+
           <div style={{ marginTop: 24, borderTop: '1px solid var(--error)', paddingTop: 16 }}>
             <div className="form-label" style={{ color: 'var(--error)', marginBottom: 12 }}>
               Danger Zone

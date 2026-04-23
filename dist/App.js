@@ -12,7 +12,7 @@ import Modal from './components/Modal.js';
 import SplashScreen from './components/SplashScreen.js';
 import { useApp } from './store.js';
 import { calculateWeeklyScore, getWeekStart, getPeriodIndex, getPeriodDateRange, computeMaxWeekPoints, getCompletedPeriodEuros, pointsToEuros, formatEuros, generateId } from './utils.js';
-import { getDriveToken, syncToDrive } from './utils/driveSync.js';
+import { getDriveToken, syncToDrive, restoreFromDrive } from './utils/driveSync.js';
 export default function App() {
     const { state, dispatch } = useApp();
     const [showData, setShowData] = useState(false);
@@ -150,6 +150,25 @@ export default function App() {
         document.addEventListener('visibilitychange', handleVisibilityChange);
         return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
     }, [state.settings.driveBackupEnabled, dispatch]);
+    // On mount: if Drive backup is enabled and a token exists, restore from Drive
+    // if the remote copy is strictly newer than local state.
+    useEffect(() => {
+        if (!state.settings.driveBackupEnabled)
+            return;
+        const token = getDriveToken();
+        if (!token)
+            return;
+        (async () => {
+            const remote = await restoreFromDrive(token);
+            if (!remote)
+                return;
+            const remoteTs = remote.lastSavedTimestamp;
+            const localTs = state.lastSavedTimestamp;
+            if (remoteTs && (!localTs || new Date(remoteTs) > new Date(localTs))) {
+                dispatch({ type: 'LOAD_STATE', payload: remote });
+            }
+        })();
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps — mount-only, intentional
     const saveGameSettings = () => {
         dispatch({ type: 'UPDATE_GAMIFICATION_SETTINGS', payload: editSettings });
         dispatch({ type: 'UPDATE_SETTINGS', payload: { ...editSplash, driveBackupEnabled: editDriveEnabled } });

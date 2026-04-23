@@ -73,6 +73,10 @@ function loadState(): AppState {
           ...parsed.settings,
           googleAccessToken,
           gamification: { ...defaultState.settings.gamification, ...parsed.settings?.gamification },
+          // Explicit fallbacks for Drive-critical fields — ?? so false is respected,
+          // || for googleClientId so empty string also falls back to default.
+          driveBackupEnabled: parsed.settings?.driveBackupEnabled ?? defaultState.settings.driveBackupEnabled,
+          googleClientId: parsed.settings?.googleClientId || defaultState.settings.googleClientId,
         },
         weeklyScores: parsed.weeklyScores || [],
         weekTemplates: parsed.weekTemplates || [],
@@ -162,8 +166,29 @@ function reducer(state: AppState, action: AppAction): AppState {
       scores.sort((a, b) => new Date(b.weekStart).getTime() - new Date(a.weekStart).getTime());
       return { ...state, weeklyScores: scores.slice(0, 52) };
     }
-    case 'LOAD_STATE':
-      return action.payload;
+    case 'LOAD_STATE': {
+      const payloadSettings = action.payload.settings;
+      return {
+        ...action.payload,
+        settings: {
+          ...defaultState.settings,
+          ...payloadSettings,
+          googleAccessToken: state.settings.googleAccessToken,
+          googleClientId:
+            payloadSettings.googleClientId || state.settings.googleClientId,
+          driveBackupEnabled:
+            payloadSettings.driveBackupEnabled ?? state.settings.driveBackupEnabled,
+          driveFileId:
+            payloadSettings.driveFileId ?? state.settings.driveFileId,
+          driveLastSynced:
+            payloadSettings.driveLastSynced ?? state.settings.driveLastSynced,
+          gamification: {
+            ...defaultState.settings.gamification,
+            ...payloadSettings.gamification,
+          },
+        },
+      };
+    }
     case 'ADD_WEEK_TEMPLATE':
       return { ...state, weekTemplates: [...state.weekTemplates, action.payload] };
     case 'UPDATE_WEEK_TEMPLATE':

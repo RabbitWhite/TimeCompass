@@ -99,6 +99,7 @@ const CRITICAL_URLS = [
 
 // Optional files: cached best-effort; a failure here does NOT abort SW install
 const OPTIONAL_URLS = [
+  BASE + 'TimeCompass_Intro.mp4',
   BASE + 'background.png',
   BASE + 'cover.png',
   BASE + 'app-icon.png',
@@ -221,6 +222,7 @@ cat > dist/index.html << 'HTML'
     <link rel="manifest" href="/Lifetracker/manifest.json" />
     <link rel="apple-touch-icon" sizes="180x180" href="/Lifetracker/icon-180x180.png" />
     <link rel="stylesheet" href="/Lifetracker/App.css" />
+    <link rel="preload" as="video" href="/Lifetracker/TimeCompass_Intro.mp4" />
     <title>Time Compass</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script type="importmap">

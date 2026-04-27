@@ -60,11 +60,18 @@ echo "Copying static assets..."
 cp public/* dist/ 2>/dev/null || true
 touch dist/.nojekyll  # Prevents GitHub Pages from running Jekyll on the static files
 
-# Copy intro animation video to dist for GitHub Pages
-cp graphics/TimeCompass_Intro.mp4 dist/TimeCompass_Intro.mp4
+# Copy video and cover image as real files (warn if missing, don't abort)
+if [ -f public/TimeCompass_Intro.mp4 ]; then
+  cp public/TimeCompass_Intro.mp4 dist/TimeCompass_Intro.mp4
+else
+  echo "WARNING: public/TimeCompass_Intro.mp4 not found — video will be missing from dist/"
+fi
 
-# Symlink for local Vite dev server (serves public/ at root)
-ln -sf ../graphics/TimeCompass_Intro.mp4 public/TimeCompass_Intro.mp4 2>/dev/null || true
+if [ -f public/cover.png ]; then
+  cp public/cover.png dist/cover.png
+else
+  echo "WARNING: public/cover.png not found — fallback image will be missing from dist/"
+fi
 
 # 4. Copy CSS
 cp src/App.css dist/

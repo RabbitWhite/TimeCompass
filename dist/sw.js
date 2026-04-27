@@ -1,4 +1,4 @@
-const CACHE_NAME = 'timecompass-e01b1e3';
+const CACHE_NAME = 'timecompass-73ac132';
 const BASE = '/Lifetracker/';
 
 // Critical files: if any of these fail to cache, the SW install fails (app won't work)
@@ -26,6 +26,7 @@ const CRITICAL_URLS = [
 
 // Optional files: cached best-effort; a failure here does NOT abort SW install
 const OPTIONAL_URLS = [
+  BASE + 'TimeCompass_Intro.mp4',
   BASE + 'background.png',
   BASE + 'cover.png',
   BASE + 'app-icon.png',

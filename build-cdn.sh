@@ -60,6 +60,19 @@ echo "Copying static assets..."
 cp public/* dist/ 2>/dev/null || true
 touch dist/.nojekyll  # Prevents GitHub Pages from running Jekyll on the static files
 
+# Copy video and cover image as real files (warn if missing, don't abort)
+if [ -f public/TimeCompass_Intro.mp4 ]; then
+  cp public/TimeCompass_Intro.mp4 dist/TimeCompass_Intro.mp4
+else
+  echo "WARNING: public/TimeCompass_Intro.mp4 not found — video will be missing from dist/"
+fi
+
+if [ -f public/cover.png ]; then
+  cp public/cover.png dist/cover.png
+else
+  echo "WARNING: public/cover.png not found — fallback image will be missing from dist/"
+fi
+
 # 4. Copy CSS
 cp src/App.css dist/
 
@@ -93,6 +106,7 @@ const CRITICAL_URLS = [
 
 // Optional files: cached best-effort; a failure here does NOT abort SW install
 const OPTIONAL_URLS = [
+  BASE + 'TimeCompass_Intro.mp4',
   BASE + 'background.png',
   BASE + 'cover.png',
   BASE + 'app-icon.png',
@@ -215,6 +229,7 @@ cat > dist/index.html << 'HTML'
     <link rel="manifest" href="/Lifetracker/manifest.json" />
     <link rel="apple-touch-icon" sizes="180x180" href="/Lifetracker/icon-180x180.png" />
     <link rel="stylesheet" href="/Lifetracker/App.css" />
+    <link rel="preload" as="video" href="/Lifetracker/TimeCompass_Intro.mp4" />
     <title>Time Compass</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script type="importmap">

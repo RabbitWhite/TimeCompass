@@ -1,8 +1,8 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useState, useMemo } from 'react';
-import { useApp } from '../store';
-import Modal from '../components/Modal';
-import { generateId, formatDate, formatTime, getDaysBetween, isSameDay } from '../utils';
+import { useApp } from '../store.js';
+import Modal from '../components/Modal.js';
+import { generateId, formatDate, formatTime, getDaysBetween, isSameDay } from '../utils.js';
 const TIME_WINDOWS = [
     { label: '1 Day', days: 1 },
     { label: '3 Days', days: 3 },
@@ -73,7 +73,7 @@ export default function Timeline() {
         try {
             const tokenClient = window.google?.accounts?.oauth2?.initTokenClient({
                 client_id: clientId.trim(),
-                scope: 'https://www.googleapis.com/auth/calendar.readonly',
+                scope: 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/drive.appdata',
                 callback: async (response) => {
                     if (response.error)
                         return;

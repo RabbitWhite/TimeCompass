@@ -1,7 +1,7 @@
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import { useState, useMemo, useCallback } from 'react';
-import { useApp } from '../store';
-import { formatDuration, getWeekStart, getWeekEnd, getDaysBetween, isSameDay, formatDate, calculateWeeklyScore, getPeriodIndex, getPeriodDateRange, computeMaxWeekPoints, pointsToEuros, formatEuros, getCatchUpAreas } from '../utils';
+import { useApp } from '../store.js';
+import { formatDuration, getWeekStart, getWeekEnd, getDaysBetween, isSameDay, formatDate, calculateWeeklyScore, getPeriodIndex, getPeriodDateRange, computeMaxWeekPoints, pointsToEuros, formatEuros, getCatchUpAreas } from '../utils.js';
 const PERIODS = [
     { value: 'this_week', label: 'This Week' },
     { value: 'last_week', label: 'Last Week' },

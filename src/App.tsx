@@ -11,7 +11,8 @@ import Modal from './components/Modal';
 import SplashScreen from './components/SplashScreen';
 import { useApp } from './store';
 import { calculateWeeklyScore, getWeekStart, getPeriodIndex, getPeriodDateRange, computeMaxWeekPoints, getCompletedPeriodEuros, pointsToEuros, formatEuros, generateId } from './utils';
-import type { GamificationSettings, AppSettings, WalletTransaction } from './types';
+import { getDriveToken, syncToDrive, restoreFromDrive } from './utils/driveSync';
+import type { AppState, GamificationSettings, AppSettings, WalletTransaction } from './types';
 import './App.css';
 
 export default function App() {
@@ -27,7 +28,14 @@ export default function App() {
   });
   const [swUpdateReady, setSwUpdateReady] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showHardResetConfirm, setShowHardResetConfirm] = useState(false);
+  const [editDriveEnabled, setEditDriveEnabled] = useState(state.settings.driveBackupEnabled);
+  const [driveNeedsReauth, setDriveNeedsReauth] = useState(
+    () => state.settings.driveBackupEnabled && !getDriveToken()
+  );
   const fileRef = useRef<HTMLInputElement>(null);
+  const [importPending, setImportPending] = useState<AppState | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
 
   // Persist current week's score whenever it changes (moved from Gamification.tsx)
   const currentWeekStart = useMemo(() => getWeekStart(), []);
@@ -102,9 +110,81 @@ export default function App() {
     return () => window.removeEventListener('sw-update-ready', handler);
   }, []);
 
+  useEffect(() => {
+    setDriveNeedsReauth(state.settings.driveBackupEnabled && !getDriveToken());
+  }, [state.settings.driveBackupEnabled]);
+
+  const reauthDrive = () => {
+    const clientId = state.settings.googleClientId;
+    if (!clientId) return;
+    try {
+      const tokenClient = (window as any).google?.accounts?.oauth2?.initTokenClient({
+        client_id: clientId,
+        scope: 'https://www.googleapis.com/auth/drive.appdata',
+        callback: (response: any) => {
+          if (response.error) return;
+          dispatch({ type: 'UPDATE_SETTINGS', payload: { googleAccessToken: response.access_token } });
+          setDriveNeedsReauth(false);
+        },
+      });
+      tokenClient?.requestAccessToken();
+    } catch { /* Google Identity Services not loaded */ }
+  };
+
+  // Keep a ref so the visibilitychange handler always sees current state
+  const stateRef = useRef(state);
+  useEffect(() => { stateRef.current = state; }, [state]);
+
+  useEffect(() => {
+    if (!state.settings.driveBackupEnabled) return;
+
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState !== 'hidden') return;
+      const token = getDriveToken();
+      if (!token) return;
+
+      const s = stateRef.current;
+      const { lastSavedTimestamp, settings: { driveLastSynced, driveFileId } } = s;
+
+      // Only upload if local state is newer than last Drive sync
+      const hasUnsavedDiff =
+        !driveLastSynced ||
+        (lastSavedTimestamp != null && new Date(lastSavedTimestamp) > new Date(driveLastSynced));
+      if (!hasUnsavedDiff) return;
+
+      const newFileId = await syncToDrive(token, s, driveFileId);
+      if (newFileId) {
+        dispatch({
+          type: 'UPDATE_SETTINGS',
+          payload: { driveLastSynced: new Date().toISOString(), driveFileId: newFileId },
+        });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [state.settings.driveBackupEnabled, dispatch]);
+
+  // On mount: if Drive backup is enabled and a token exists, restore from Drive
+  // if the remote copy is strictly newer than local state.
+  useEffect(() => {
+    if (!state.settings.driveBackupEnabled) return;
+    const token = getDriveToken();
+    if (!token) return;
+    (async () => {
+      const remote = await restoreFromDrive(token) as AppState | null;
+      if (!remote) return;
+      const remoteTs = (remote as AppState).lastSavedTimestamp;
+      const localTs = state.lastSavedTimestamp;
+      if (remoteTs && (!localTs || new Date(remoteTs) > new Date(localTs))) {
+        dispatch({ type: 'LOAD_STATE', payload: remote as AppState });
+      }
+    })();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps — mount-only, intentional
+
   const saveGameSettings = () => {
     dispatch({ type: 'UPDATE_GAMIFICATION_SETTINGS', payload: editSettings });
-    dispatch({ type: 'UPDATE_SETTINGS', payload: editSplash });
+    dispatch({ type: 'UPDATE_SETTINGS', payload: { ...editSplash, driveBackupEnabled: editDriveEnabled } });
     setShowGameSettings(false);
   };
 
@@ -114,7 +194,7 @@ export default function App() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `lifetracker-backup-${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `timecompass-backup-${new Date().toISOString().split('T')[0]}.json`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -126,14 +206,29 @@ export default function App() {
     reader.onload = () => {
       try {
         const data = JSON.parse(reader.result as string);
-        if (data.focusAreas && data.timeEntries) {
-          dispatch({ type: 'LOAD_STATE', payload: data });
-          setShowData(false);
+        if (!Array.isArray(data.focusAreas) || data.focusAreas.length === 0) {
+          setImportError('This file contains no focus areas. It may be empty or not a valid Time Compass backup. Import cancelled to protect your existing data.');
+          return;
         }
-      } catch { /* invalid file */ }
+        if (!Array.isArray(data.timeEntries)) {
+          setImportError('This file is missing required fields. Import cancelled to protect your existing data.');
+          return;
+        }
+        setImportPending(data as AppState);
+      } catch {
+        setImportError('This file could not be parsed. It may be corrupted or not a valid JSON backup.');
+      }
     };
     reader.readAsText(file);
     if (fileRef.current) fileRef.current.value = '';
+  };
+
+  const confirmImport = () => {
+    if (!importPending) return;
+    exportData();
+    dispatch({ type: 'LOAD_STATE', payload: importPending });
+    setImportPending(null);
+    setShowData(false);
   };
 
   return (
@@ -141,7 +236,7 @@ export default function App() {
     <SplashScreen />
     <div className="app-layout">
       <header className="app-header">
-        <h1>LifeTracker</h1>
+        <h1>Time Compass</h1>
         <div className="header-actions">
           <button className="btn btn-ghost btn-sm" onClick={() => {
             setEditSettings({ ...state.settings.gamification });
@@ -151,14 +246,15 @@ export default function App() {
               splashDismissMode: state.settings.splashDismissMode,
               splashDuration: state.settings.splashDuration,
             });
+            setEditDriveEnabled(state.settings.driveBackupEnabled);
             setShowGameSettings(true);
           }}>
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="#f5e6c8">
               <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z" />
             </svg>
           </button>
           <button className="btn btn-ghost btn-sm" onClick={() => setShowData(true)}>
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="#f5e6c8">
               <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
             </svg>
           </button>
@@ -170,6 +266,18 @@ export default function App() {
           <button className="btn btn-sm" onClick={() => window.location.reload()}>
             Update
           </button>
+        </div>
+      )}
+      {driveNeedsReauth && (
+        <div className="reauth-banner">
+          <span>Drive backup needs reconnection</span>
+          {state.settings.googleClientId ? (
+            <button className="btn btn-sm reauth-banner-btn" onClick={reauthDrive}>
+              Sign in
+            </button>
+          ) : (
+            <span className="reauth-banner-hint">Set a Client ID in Timeline</span>
+          )}
         </div>
       )}
       <main className="app-content">
@@ -186,22 +294,58 @@ export default function App() {
       <BottomNav />
 
       {showData && (
-        <Modal title="Data Management" onClose={() => setShowData(false)}>
-          <p className="text-secondary text-sm mb-16">
-            Your data is stored in the browser. Export a backup to keep it safe across cache clears.
-          </p>
-          <button className="btn btn-primary btn-block mb-16" onClick={exportData}>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-              <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
-            </svg>
-            Export Backup (JSON)
-          </button>
-          <button className="btn btn-secondary btn-block" onClick={() => fileRef.current?.click()}>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-              <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z" />
-            </svg>
-            Import Backup
-          </button>
+        <Modal title="Data Management" onClose={() => { setShowData(false); setImportPending(null); setImportError(null); }}>
+          {importError ? (
+            <div style={{ background: 'var(--surface-alt, var(--surface))', borderRadius: 8, padding: 12, border: '1px solid var(--error)', marginBottom: 16 }}>
+              <div className="text-sm" style={{ color: 'var(--error)', marginBottom: 8 }}><strong>Import failed</strong></div>
+              <div className="text-sm" style={{ marginBottom: 12 }}>{importError}</div>
+              <button className="btn btn-secondary btn-sm" onClick={() => setImportError(null)}>Dismiss</button>
+            </div>
+          ) : importPending ? (
+            <div style={{ background: 'var(--surface-alt, var(--surface))', borderRadius: 8, padding: 12, border: '1px solid var(--warning, #f59e0b)' }}>
+              <div className="text-sm" style={{ marginBottom: 12 }}><strong>Review before importing</strong></div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '4px 16px', marginBottom: 12, fontSize: 13 }}>
+                <span />                           <strong>Current</strong>                     <strong>File</strong>
+                <span>Focus areas</span>           <span>{state.focusAreas.length}</span>        <span>{(importPending.focusAreas as unknown[]).length}</span>
+                <span>Time entries</span>          <span>{state.timeEntries.length}</span>       <span>{(importPending.timeEntries as unknown[]).length}</span>
+                <span>Wallet transactions</span>   <span>{state.walletTransactions.length}</span> <span>{Array.isArray(importPending.walletTransactions) ? importPending.walletTransactions.length : 0}</span>
+              </div>
+              <div className="text-sm" style={{ marginBottom: 12 }}>
+                <strong>Importing will permanently replace all current data.</strong> Your current state will be downloaded as a backup file automatically before importing.
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn btn-secondary btn-sm" onClick={() => setImportPending(null)}>Cancel</button>
+                <button
+                  className="btn btn-sm"
+                  style={{ background: 'var(--error)', color: '#fff', borderColor: 'var(--error)' }}
+                  onClick={confirmImport}
+                >
+                  Download backup &amp; import
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className="text-secondary text-sm mb-16">
+                Your data is stored in the browser. Export a backup to keep it safe across cache clears.
+              </p>
+              <button className="btn btn-primary btn-block mb-16" onClick={exportData}>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                  <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" />
+                </svg>
+                Export Backup (JSON)
+              </button>
+              <button className="btn btn-secondary btn-block" onClick={() => fileRef.current?.click()}>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                  <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z" />
+                </svg>
+                Import Backup
+              </button>
+              <p className="text-secondary text-sm mt-16" style={{ fontSize: 11 }}>
+                Tip: Export regularly so you can restore after clearing browser data.
+              </p>
+            </>
+          )}
           <input
             ref={fileRef}
             type="file"
@@ -209,14 +353,11 @@ export default function App() {
             style={{ display: 'none' }}
             onChange={importData}
           />
-          <p className="text-secondary text-sm mt-16" style={{ fontSize: 11 }}>
-            Tip: Export regularly so you can restore after clearing browser data.
-          </p>
         </Modal>
       )}
 
       {showGameSettings && (
-        <Modal title="Reward Settings" onClose={() => { setShowGameSettings(false); setShowResetConfirm(false); }}>
+        <Modal title="Reward Settings" onClose={() => { setShowGameSettings(false); setShowResetConfirm(false); setShowHardResetConfirm(false); }}>
           <div className="form-group">
             <label className="form-label">Monthly reward budget (€)</label>
             <input
@@ -427,6 +568,73 @@ export default function App() {
               />
             </div>
           )}
+          <div style={{ marginTop: 24, borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+            <div className="form-label" style={{ marginBottom: 12 }}>Cloud Backup</div>
+            <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              Back up to Google Drive
+              <button
+                className={`toggle-btn ${editDriveEnabled ? 'on' : ''}`}
+                onClick={() => setEditDriveEnabled(e => !e)}
+                type="button"
+              >
+                <span className="toggle-knob" />
+              </button>
+            </label>
+            <div className="text-secondary text-sm" style={{ marginBottom: 4 }}>
+              Saves to Drive's hidden app folder when you leave the app. Requires Google sign-in via Timeline.
+            </div>
+            {state.settings.driveLastSynced && (
+              <div className="text-secondary text-sm">
+                Last synced: {new Date(state.settings.driveLastSynced).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              </div>
+            )}
+          </div>
+
+          <div style={{ marginTop: 24, borderTop: '1px solid var(--error)', paddingTop: 16 }}>
+            <div className="form-label" style={{ color: 'var(--error)', marginBottom: 12 }}>
+              Danger Zone
+            </div>
+            {!showHardResetConfirm ? (
+              <button
+                className="btn btn-sm"
+                style={{ background: 'var(--error)', color: '#fff', borderColor: 'var(--error)' }}
+                onClick={() => { exportData(); setShowHardResetConfirm(true); }}
+                type="button"
+              >
+                Hard Reset
+              </button>
+            ) : (
+              <div style={{ background: 'var(--surface-alt, var(--surface))', borderRadius: 8, padding: 12, border: '1px solid var(--error)' }}>
+                <div className="text-sm" style={{ marginBottom: 8 }}>
+                  <strong>All tracking history, scores, wallet transactions and wallet balance will be permanently deleted.</strong>
+                </div>
+                <div className="text-sm text-secondary" style={{ marginBottom: 12 }}>
+                  Your focus areas, projects, templates and settings are preserved. A backup has been downloaded.
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => setShowHardResetConfirm(false)}
+                    type="button"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="btn btn-sm"
+                    style={{ background: 'var(--error)', color: '#fff', borderColor: 'var(--error)' }}
+                    onClick={() => {
+                      dispatch({ type: 'HARD_RESET' });
+                      setShowHardResetConfirm(false);
+                      setShowGameSettings(false);
+                    }}
+                    type="button"
+                  >
+                    Delete all history
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
           <div className="modal-actions">
             <button className="btn btn-secondary" onClick={() => setShowGameSettings(false)}>Cancel</button>
             <button className="btn btn-primary" onClick={saveGameSettings}>Save</button>

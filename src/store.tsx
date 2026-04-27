@@ -1,7 +1,8 @@
 import { createContext, useContext, useReducer, useEffect, type ReactNode } from 'react';
 import type { AppState, AppAction, WalletTransaction } from './types';
 
-const STORAGE_KEY = 'lifetracker-state';
+const STORAGE_KEY = 'timecompass-state';
+const LEGACY_STORAGE_KEY = 'lifetracker-state';
 
 const defaultState: AppState = {
   focusAreas: [],
@@ -28,22 +29,43 @@ const defaultState: AppState = {
     walletBalance: 0,
     lastCreditedPeriodIndex: -1,
     periodResetDate: null,
+    driveBackupEnabled: false,
+    driveLastSynced: null,
+    driveFileId: null,
   },
   weeklyScores: [],
   weekTemplates: [],
   walletTransactions: [],
+  lastSavedTimestamp: null,
 };
 
 const SESSION_TOKEN_KEY = 'googleAccessToken';
 
+let loadFailed = false;
+
 function loadState(): AppState {
   try {
+    // One-time migration: copy legacy data to new key then remove old key
+    if (!localStorage.getItem(STORAGE_KEY)) {
+      const legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
+      if (legacy) {
+        localStorage.setItem(STORAGE_KEY, legacy);
+        localStorage.removeItem(LEGACY_STORAGE_KEY);
+      }
+    }
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      const parsed = JSON.parse(stored);
+      let parsed: AppState;
+      try {
+        parsed = JSON.parse(stored);
+      } catch (err) {
+        console.error('[store] Failed to parse stored state — preserving raw localStorage data untouched.', err);
+        loadFailed = true;
+        return defaultState;
+      }
       // googleAccessToken is short-lived — read from sessionStorage, not localStorage
       const googleAccessToken = sessionStorage.getItem(SESSION_TOKEN_KEY) ?? '';
-      return {
+      const loaded = {
         ...defaultState,
         ...parsed,
         settings: {
@@ -51,13 +73,22 @@ function loadState(): AppState {
           ...parsed.settings,
           googleAccessToken,
           gamification: { ...defaultState.settings.gamification, ...parsed.settings?.gamification },
+          // Explicit fallbacks for Drive-critical fields — ?? so false is respected,
+          // || for googleClientId so empty string also falls back to default.
+          driveBackupEnabled: parsed.settings?.driveBackupEnabled ?? defaultState.settings.driveBackupEnabled,
+          googleClientId: parsed.settings?.googleClientId || defaultState.settings.googleClientId,
         },
         weeklyScores: parsed.weeklyScores || [],
         weekTemplates: parsed.weekTemplates || [],
         walletTransactions: parsed.walletTransactions || [],
       };
+      console.log(`[store] Loaded state: ${loaded.focusAreas.length} focusAreas, ${loaded.timeEntries.length} timeEntries`);
+      return loaded;
     }
-  } catch { /* ignore */ }
+  } catch (err) {
+    console.error('[store] Unexpected error in loadState — preserving localStorage untouched.', err);
+    loadFailed = true;
+  }
   return defaultState;
 }
 
@@ -67,7 +98,12 @@ function saveState(state: AppState) {
     sessionStorage.setItem(SESSION_TOKEN_KEY, state.settings.googleAccessToken ?? '');
     // Save all other state to localStorage, excluding the access token
     const { googleAccessToken: _omit, ...otherSettings } = state.settings;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, settings: otherSettings }));
+    const now = new Date().toISOString();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      ...state,
+      settings: otherSettings,
+      lastSavedTimestamp: now,
+    }));
   } catch { /* ignore */ }
 }
 
@@ -130,8 +166,29 @@ function reducer(state: AppState, action: AppAction): AppState {
       scores.sort((a, b) => new Date(b.weekStart).getTime() - new Date(a.weekStart).getTime());
       return { ...state, weeklyScores: scores.slice(0, 52) };
     }
-    case 'LOAD_STATE':
-      return action.payload;
+    case 'LOAD_STATE': {
+      const payloadSettings = action.payload.settings;
+      return {
+        ...action.payload,
+        settings: {
+          ...defaultState.settings,
+          ...payloadSettings,
+          googleAccessToken: state.settings.googleAccessToken,
+          googleClientId:
+            payloadSettings.googleClientId || state.settings.googleClientId,
+          driveBackupEnabled:
+            payloadSettings.driveBackupEnabled ?? state.settings.driveBackupEnabled,
+          driveFileId:
+            payloadSettings.driveFileId ?? state.settings.driveFileId,
+          driveLastSynced:
+            payloadSettings.driveLastSynced ?? state.settings.driveLastSynced,
+          gamification: {
+            ...defaultState.settings.gamification,
+            ...payloadSettings.gamification,
+          },
+        },
+      };
+    }
     case 'ADD_WEEK_TEMPLATE':
       return { ...state, weekTemplates: [...state.weekTemplates, action.payload] };
     case 'UPDATE_WEEK_TEMPLATE':
@@ -161,6 +218,21 @@ function reducer(state: AppState, action: AppAction): AppState {
       return { ...state, walletTransactions: [action.payload, ...state.walletTransactions] };
     case 'UPDATE_WALLET_SETTINGS':
       return { ...state, settings: { ...state.settings, ...action.payload } };
+    case 'HARD_RESET':
+      return {
+        ...state,
+        timeEntries: [],
+        calendarEvents: [],
+        weeklyScores: [],
+        walletTransactions: [],
+        activeTracking: null,
+        settings: {
+          ...state.settings,
+          walletBalance: 0,
+          lastCreditedPeriodIndex: -1,
+          periodResetDate: null,
+        },
+      };
     default:
       return state;
   }
@@ -172,7 +244,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, null, loadState);
 
   useEffect(() => {
-    saveState(state);
+    if (!loadFailed) {
+      saveState(state);
+    }
   }, [state]);
 
   return (

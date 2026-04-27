@@ -1,17 +1,14 @@
 import { useState } from 'react';
-import { useApp } from '../store';
 
 const INTRO_SESSION_KEY = 'timecompass-intro-shown';
 
 export default function SplashScreen() {
-  const { state } = useApp();
-  const { splashPhilosophyText, splashPrizeImage, splashDismissMode, splashDuration } = state.settings;
-
   const [visible, setVisible] = useState(() => {
     if (sessionStorage.getItem(INTRO_SESSION_KEY)) return false;
     sessionStorage.setItem(INTRO_SESSION_KEY, '1');
     return true;
   });
+  const [showFallback, setShowFallback] = useState(false);
 
   if (!visible) return null;
 
@@ -22,10 +19,18 @@ export default function SplashScreen() {
         autoPlay
         muted
         playsInline
-        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+        style={{ width: '100%', height: '100%', objectFit: 'cover', display: showFallback ? 'none' : 'block' }}
         onEnded={() => setVisible(false)}
-        onError={() => setVisible(false)}
+        onError={() => setShowFallback(true)}
       />
+      {showFallback && (
+        <img
+          src="/Lifetracker/cover.png"
+          alt=""
+          onClick={() => setVisible(false)}
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}
+        />
+      )}
     </div>
   );
 }

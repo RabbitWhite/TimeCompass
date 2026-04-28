@@ -11,7 +11,7 @@ import Modal from './components/Modal';
 import SplashScreen from './components/SplashScreen';
 import { useApp } from './store';
 import { calculateWeeklyScore, getWeekStart, getPeriodIndex, getPeriodDateRange, computeMaxWeekPoints, getCompletedPeriodEuros, pointsToEuros, formatEuros, generateId } from './utils';
-import { getDriveToken, syncToDrive, restoreFromDrive } from './utils/driveSync';
+import { getDriveToken, syncToDrive, restoreFromDrive, attemptSilentReauth } from './utils/driveSync';
 import type { AppState, GamificationSettings, AppSettings, WalletTransaction } from './types';
 import './App.css';
 
@@ -165,21 +165,38 @@ export default function App() {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [state.settings.driveBackupEnabled, dispatch]);
 
-  // On mount: if Drive backup is enabled and a token exists, restore from Drive
-  // if the remote copy is strictly newer than local state.
+  // On mount: if Drive backup is enabled and a token exists, restore from Drive if
+  // the remote copy is strictly newer than local state. If no token is present,
+  // attempt silent re-auth (prompt='') before falling back to the reconnect banner.
   useEffect(() => {
     if (!state.settings.driveBackupEnabled) return;
-    const token = getDriveToken();
-    if (!token) return;
-    (async () => {
-      const remote = await restoreFromDrive(token) as AppState | null;
+
+    const doRestore = async (t: string) => {
+      const remote = await restoreFromDrive(t) as AppState | null;
       if (!remote) return;
       const remoteTs = (remote as AppState).lastSavedTimestamp;
       const localTs = state.lastSavedTimestamp;
       if (remoteTs && (!localTs || new Date(remoteTs) > new Date(localTs))) {
         dispatch({ type: 'LOAD_STATE', payload: remote as AppState });
       }
-    })();
+    };
+
+    const token = getDriveToken();
+    if (token) {
+      doRestore(token);
+      return;
+    }
+
+    attemptSilentReauth(
+      state.settings.googleClientId,
+      'https://www.googleapis.com/auth/drive.appdata',
+      (newToken) => {
+        if (!newToken) return;
+        dispatch({ type: 'UPDATE_SETTINGS', payload: { googleAccessToken: newToken } });
+        setDriveNeedsReauth(false);
+        doRestore(newToken);
+      },
+    );
   }, []); // eslint-disable-line react-hooks/exhaustive-deps — mount-only, intentional
 
   const saveGameSettings = () => {

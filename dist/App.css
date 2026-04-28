@@ -221,6 +221,12 @@ a { color: var(--primary); text-decoration: none; }
   color: var(--text-secondary);
   padding: 8px;
 }
+.app-header .btn-ghost {
+  color: #3a2a0a;
+}
+.app-header .btn-ghost:hover {
+  color: var(--primary);
+}
 .btn-sm { padding: 8px 12px; font-size: 12px; min-height: 36px; }
 .btn-block { width: 100%; }
 .btn-icon {

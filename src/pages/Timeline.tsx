@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useApp } from '../store';
 import Modal from '../components/Modal';
 import { generateId, formatDate, formatTime, getDaysBetween, isSameDay } from '../utils';
+import { attemptSilentReauth } from '../utils/driveSync';
 import type { CalendarEvent } from '../types';
 
 const TIME_WINDOWS = [
@@ -98,6 +99,40 @@ export default function Timeline() {
           );
           if (res.status === 401) {
             dispatch({ type: 'UPDATE_SETTINGS', payload: { googleAccessToken: '', googleCalendarConnected: false } });
+            const newToken = await new Promise<string | null>(resolve =>
+              attemptSilentReauth(
+                clientId.trim(),
+                'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/drive.appdata',
+                resolve,
+              )
+            );
+            if (newToken) {
+              dispatch({ type: 'UPDATE_SETTINGS', payload: { googleAccessToken: newToken, googleCalendarConnected: true } });
+              const retryRes = await fetch(
+                `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`,
+                { headers: { Authorization: `Bearer ${newToken}` } }
+              );
+              if (retryRes.ok) {
+                const retryData = await retryRes.json();
+                if (retryData.items) {
+                  const events: CalendarEvent[] = retryData.items.map((item: any) => ({
+                    id: `gcal-${item.id}`,
+                    title: item.summary || 'Untitled',
+                    description: item.description || '',
+                    start: item.start?.dateTime || item.start?.date || '',
+                    end: item.end?.dateTime || item.end?.date || '',
+                    focusAreaId: '',
+                    source: 'google' as const,
+                    calendarName: 'Google Calendar',
+                  }));
+                  const manualEvents = state.calendarEvents.filter(e => e.source !== 'google');
+                  dispatch({ type: 'SET_CALENDAR_EVENTS', payload: [...manualEvents, ...events] });
+                }
+                setShowSync(false);
+                return;
+              }
+              dispatch({ type: 'UPDATE_SETTINGS', payload: { googleAccessToken: '', googleCalendarConnected: false } });
+            }
             setShowSync(false);
             alert('Google Calendar session expired — please reconnect.');
             return;

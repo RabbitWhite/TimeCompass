@@ -82,3 +82,23 @@ export async function restoreFromDrive(token) {
         return null;
     return downloadBackup(token, file.id);
 }
+export function attemptSilentReauth(clientId, scope, callback) {
+    if (!clientId) {
+        callback(null);
+        return;
+    }
+    try {
+        const tokenClient = window.google?.accounts?.oauth2?.initTokenClient({
+            client_id: clientId,
+            scope,
+            prompt: '',
+            callback: (response) => {
+                callback(!response.error && response.access_token ? response.access_token : null);
+            },
+        });
+        tokenClient?.requestAccessToken({ prompt: '' });
+    }
+    catch {
+        callback(null);
+    }
+}

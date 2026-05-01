@@ -65,10 +65,7 @@ a { color: var(--primary); text-decoration: none; }
 .app-header h1 {
   font-size: 18px;
   font-weight: 700;
-  background: linear-gradient(135deg, var(--primary), #a78bfa);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #3a2a0a;
 }
 .app-header .header-actions {
   display: flex;

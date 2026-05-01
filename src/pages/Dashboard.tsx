@@ -216,7 +216,7 @@ export default function Dashboard() {
               min="0.01"
               step="0.01"
               value={spendAmount}
-              onChange={e => setSpendAmount(e.target.value)}
+              onChange={e => { const v = parseFloat(e.target.value); setSpendAmount(e.target.value === '' ? '' : isNaN(v) ? '' : String(v)); }}
               autoFocus
             />
           </div>

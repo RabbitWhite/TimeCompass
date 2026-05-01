@@ -36,6 +36,7 @@ export default function WeekTemplates() {
     const [tDescription, setTDescription] = useState('');
     const [tTargets, setTTargets] = useState([]);
     const [expandedAreas, setExpandedAreas] = useState(new Set());
+    const [rawHours, setRawHours] = useState({});
     const openNew = () => {
         setEditingId(null);
         setTName('');
@@ -130,9 +131,37 @@ export default function WeekTemplates() {
                                                     fontWeight: 700,
                                                     fontSize: 15,
                                                     color: 'var(--text)',
-                                                }, children: [target.weeklyTargetHours, "h"] })) : (_jsx("input", { className: "form-input tmpl-hours-input", type: "number", value: target.weeklyTargetHours, onChange: e => setAreaHours(area.id, parseFloat(e.target.value) || 0), min: "0", step: "0.5" })), _jsx("span", { className: "text-secondary", style: { fontSize: 12, width: 26 }, children: "h/w" }), hasProjects && (_jsx("button", { className: "tmpl-expand-btn", onClick: () => toggleArea(area.id), children: _jsx("svg", { viewBox: "0 0 24 24", width: "14", height: "14", fill: "currentColor", style: { transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }, children: _jsx("path", { d: "M7 10l5 5 5-5z" }) }) }))] })] }), isExpanded && (_jsx("div", { className: "tmpl-projects", children: areaProjects.map(project => {
+                                                }, children: [target.weeklyTargetHours, "h"] })) : (_jsx("input", { className: "form-input tmpl-hours-input", type: "number", value: rawHours[area.id] ?? String(target.weeklyTargetHours), onChange: e => {
+                                                    const raw = e.target.value;
+                                                    const v = parseFloat(raw);
+                                                    setRawHours(prev => ({ ...prev, [area.id]: raw }));
+                                                    if (!isNaN(v))
+                                                        setAreaHours(area.id, v);
+                                                }, onBlur: () => {
+                                                    const raw = rawHours[area.id];
+                                                    if (raw !== undefined) {
+                                                        const v = parseFloat(raw);
+                                                        setAreaHours(area.id, isNaN(v) ? 0 : v);
+                                                        setRawHours(prev => { const n = { ...prev }; delete n[area.id]; return n; });
+                                                    }
+                                                }, min: "0", step: "0.5" })), _jsx("span", { className: "text-secondary", style: { fontSize: 12, width: 26 }, children: "h/w" }), hasProjects && (_jsx("button", { className: "tmpl-expand-btn", onClick: () => toggleArea(area.id), children: _jsx("svg", { viewBox: "0 0 24 24", width: "14", height: "14", fill: "currentColor", style: { transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }, children: _jsx("path", { d: "M7 10l5 5 5-5z" }) }) }))] })] }), isExpanded && (_jsx("div", { className: "tmpl-projects", children: areaProjects.map(project => {
                                     const pt = target.projectTargets.find(p => p.projectId === project.id);
-                                    return (_jsxs("div", { className: "tmpl-project-row", children: [_jsxs("span", { className: "text-secondary", style: { fontSize: 13 }, children: ["\u21B3 ", project.name] }), _jsxs("div", { style: { display: 'flex', alignItems: 'center', gap: 6 }, children: [_jsx("input", { className: "form-input tmpl-hours-input", type: "number", value: pt?.weeklyTargetHours ?? 0, onChange: e => setProjectHours(area.id, project.id, parseFloat(e.target.value) || 0), min: "0", step: "0.5" }), _jsx("span", { className: "text-secondary", style: { fontSize: 12, width: 26 }, children: "h/w" }), _jsx("div", { style: { width: 28 } })] })] }, project.id));
+                                    return (_jsxs("div", { className: "tmpl-project-row", children: [_jsxs("span", { className: "text-secondary", style: { fontSize: 13 }, children: ["\u21B3 ", project.name] }), _jsxs("div", { style: { display: 'flex', alignItems: 'center', gap: 6 }, children: [_jsx("input", { className: "form-input tmpl-hours-input", type: "number", value: rawHours[`${area.id}:${project.id}`] ?? String(pt?.weeklyTargetHours ?? 0), onChange: e => {
+                                                            const raw = e.target.value;
+                                                            const key = `${area.id}:${project.id}`;
+                                                            const v = parseFloat(raw);
+                                                            setRawHours(prev => ({ ...prev, [key]: raw }));
+                                                            if (!isNaN(v))
+                                                                setProjectHours(area.id, project.id, v);
+                                                        }, onBlur: () => {
+                                                            const key = `${area.id}:${project.id}`;
+                                                            const raw = rawHours[key];
+                                                            if (raw !== undefined) {
+                                                                const v = parseFloat(raw);
+                                                                setProjectHours(area.id, project.id, isNaN(v) ? 0 : v);
+                                                                setRawHours(prev => { const n = { ...prev }; delete n[key]; return n; });
+                                                            }
+                                                        }, min: "0", step: "0.5" }), _jsx("span", { className: "text-secondary", style: { fontSize: 12, width: 26 }, children: "h/w" }), _jsx("div", { style: { width: 28 } })] })] }, project.id));
                                 }) }))] }, area.id));
                 }), _jsxs("div", { className: "modal-actions mt-16", children: [_jsx("button", { className: "btn btn-secondary", onClick: () => setView('list'), children: "Cancel" }), _jsx("button", { className: "btn btn-primary", onClick: save, disabled: !tName.trim() || overLimit, children: editingId ? 'Save Changes' : 'Create Template' })] })] }));
     }

@@ -47,6 +47,7 @@ export default function WeekTemplates() {
   const [tDescription, setTDescription] = useState('');
   const [tTargets, setTTargets] = useState<TemplateFocusAreaTarget[]>([]);
   const [expandedAreas, setExpandedAreas] = useState<Set<string>>(new Set());
+  const [rawHours, setRawHours] = useState<Record<string, string>>({});
 
   const openNew = () => {
     setEditingId(null);
@@ -228,8 +229,21 @@ export default function WeekTemplates() {
                     <input
                       className="form-input tmpl-hours-input"
                       type="number"
-                      value={target.weeklyTargetHours}
-                      onChange={e => setAreaHours(area.id, parseFloat(e.target.value) || 0)}
+                      value={rawHours[area.id] ?? String(target.weeklyTargetHours)}
+                      onChange={e => {
+                        const raw = e.target.value;
+                        const v = parseFloat(raw);
+                        setRawHours(prev => ({ ...prev, [area.id]: raw }));
+                        if (!isNaN(v)) setAreaHours(area.id, v);
+                      }}
+                      onBlur={() => {
+                        const raw = rawHours[area.id];
+                        if (raw !== undefined) {
+                          const v = parseFloat(raw);
+                          setAreaHours(area.id, isNaN(v) ? 0 : v);
+                          setRawHours(prev => { const n = { ...prev }; delete n[area.id]; return n; });
+                        }
+                      }}
                       min="0"
                       step="0.5"
                     />
@@ -257,8 +271,23 @@ export default function WeekTemplates() {
                           <input
                             className="form-input tmpl-hours-input"
                             type="number"
-                            value={pt?.weeklyTargetHours ?? 0}
-                            onChange={e => setProjectHours(area.id, project.id, parseFloat(e.target.value) || 0)}
+                            value={rawHours[`${area.id}:${project.id}`] ?? String(pt?.weeklyTargetHours ?? 0)}
+                            onChange={e => {
+                              const raw = e.target.value;
+                              const key = `${area.id}:${project.id}`;
+                              const v = parseFloat(raw);
+                              setRawHours(prev => ({ ...prev, [key]: raw }));
+                              if (!isNaN(v)) setProjectHours(area.id, project.id, v);
+                            }}
+                            onBlur={() => {
+                              const key = `${area.id}:${project.id}`;
+                              const raw = rawHours[key];
+                              if (raw !== undefined) {
+                                const v = parseFloat(raw);
+                                setProjectHours(area.id, project.id, isNaN(v) ? 0 : v);
+                                setRawHours(prev => { const n = { ...prev }; delete n[key]; return n; });
+                              }
+                            }}
                             min="0"
                             step="0.5"
                           />

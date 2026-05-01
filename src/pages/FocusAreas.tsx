@@ -168,7 +168,7 @@ export default function FocusAreas() {
                     className="form-input"
                     type="number"
                     value={editingTarget[area.id] ?? String(area.weeklyTargetHours)}
-                    onChange={e => setEditingTarget({ ...editingTarget, [area.id]: e.target.value })}
+                    onChange={e => { const v = parseFloat(e.target.value); setEditingTarget({ ...editingTarget, [area.id]: e.target.value === '' ? '' : isNaN(v) ? '' : String(v) }); }}
                     onBlur={e => saveTarget(area, e.target.value)}
                     min="0"
                     step="0.5"
@@ -260,7 +260,7 @@ export default function FocusAreas() {
               className="form-input"
               type="number"
               value={targetHours}
-              onChange={e => setTargetHours(e.target.value)}
+              onChange={e => { const v = parseFloat(e.target.value); setTargetHours(e.target.value === '' ? '' : isNaN(v) ? '' : String(v)); }}
               min="0"
               step="0.5"
             />

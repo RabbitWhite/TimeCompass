@@ -19,13 +19,26 @@ export default function App() {
   const { state, dispatch } = useApp();
   const [showData, setShowData] = useState(false);
   const [showGameSettings, setShowGameSettings] = useState(false);
-  const [editSettings, setEditSettings] = useState<GamificationSettings>({ ...state.settings.gamification });
+  const [editSettings, setEditSettings] = useState<{
+    enabled: boolean;
+    monthlyRewardBudget: string;
+    pointsPerTargetHour: string;
+    balanceBasePoints: string;
+    streakBonusPoints: string;
+  }>({
+    enabled: state.settings.gamification.enabled,
+    monthlyRewardBudget: String(state.settings.gamification.monthlyRewardBudget),
+    pointsPerTargetHour: String(state.settings.gamification.pointsPerTargetHour),
+    balanceBasePoints: String(state.settings.gamification.balanceBasePoints),
+    streakBonusPoints: String(state.settings.gamification.streakBonusPoints),
+  });
   const [editSplash, setEditSplash] = useState<Pick<AppSettings, 'splashPhilosophyText' | 'splashPrizeImage' | 'splashDismissMode' | 'splashDuration'>>({
     splashPhilosophyText: state.settings.splashPhilosophyText,
     splashPrizeImage: state.settings.splashPrizeImage,
     splashDismissMode: state.settings.splashDismissMode,
     splashDuration: state.settings.splashDuration,
   });
+  const [editSplashDuration, setEditSplashDuration] = useState(String(state.settings.splashDuration));
   const [swUpdateReady, setSwUpdateReady] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showHardResetConfirm, setShowHardResetConfirm] = useState(false);
@@ -200,8 +213,18 @@ export default function App() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps — mount-only, intentional
 
   const saveGameSettings = () => {
-    dispatch({ type: 'UPDATE_GAMIFICATION_SETTINGS', payload: editSettings });
-    dispatch({ type: 'UPDATE_SETTINGS', payload: { ...editSplash, driveBackupEnabled: editDriveEnabled } });
+    dispatch({ type: 'UPDATE_GAMIFICATION_SETTINGS', payload: {
+      enabled: editSettings.enabled,
+      monthlyRewardBudget: parseInt(editSettings.monthlyRewardBudget, 10) || 0,
+      pointsPerTargetHour: parseInt(editSettings.pointsPerTargetHour, 10) || 0,
+      balanceBasePoints: parseInt(editSettings.balanceBasePoints, 10) || 0,
+      streakBonusPoints: parseInt(editSettings.streakBonusPoints, 10) || 0,
+    }});
+    dispatch({ type: 'UPDATE_SETTINGS', payload: {
+      ...editSplash,
+      splashDuration: Math.min(30, Math.max(3, parseInt(editSplashDuration, 10) || 5)),
+      driveBackupEnabled: editDriveEnabled,
+    }});
     setShowGameSettings(false);
   };
 
@@ -256,13 +279,20 @@ export default function App() {
         <h1>Time Compass</h1>
         <div className="header-actions">
           <button className="btn btn-ghost btn-sm" onClick={() => {
-            setEditSettings({ ...state.settings.gamification });
+            setEditSettings({
+              enabled: state.settings.gamification.enabled,
+              monthlyRewardBudget: String(state.settings.gamification.monthlyRewardBudget),
+              pointsPerTargetHour: String(state.settings.gamification.pointsPerTargetHour),
+              balanceBasePoints: String(state.settings.gamification.balanceBasePoints),
+              streakBonusPoints: String(state.settings.gamification.streakBonusPoints),
+            });
             setEditSplash({
               splashPhilosophyText: state.settings.splashPhilosophyText,
               splashPrizeImage: state.settings.splashPrizeImage,
               splashDismissMode: state.settings.splashDismissMode,
               splashDuration: state.settings.splashDuration,
             });
+            setEditSplashDuration(String(state.settings.splashDuration));
             setEditDriveEnabled(state.settings.driveBackupEnabled);
             setShowGameSettings(true);
           }}>
@@ -381,7 +411,7 @@ export default function App() {
               className="form-input"
               type="number"
               value={editSettings.monthlyRewardBudget}
-              onChange={e => setEditSettings({ ...editSettings, monthlyRewardBudget: parseFloat(e.target.value) || 0 })}
+              onChange={e => { const v = parseInt(e.target.value, 10); setEditSettings({ ...editSettings, monthlyRewardBudget: isNaN(v) ? '' : String(v) }); }}
               min="0"
               step="1"
             />
@@ -396,12 +426,12 @@ export default function App() {
               className="form-input"
               type="number"
               value={editSettings.pointsPerTargetHour}
-              onChange={e => setEditSettings({ ...editSettings, pointsPerTargetHour: parseFloat(e.target.value) || 0 })}
+              onChange={e => { const v = parseInt(e.target.value, 10); setEditSettings({ ...editSettings, pointsPerTargetHour: isNaN(v) ? '' : String(v) }); }}
               min="0"
               step="1"
             />
             <div className="text-secondary text-sm mt-8">
-              Affects proportional reward calculation. (e.g., 10h target at 100% = {editSettings.pointsPerTargetHour * 10} pts)
+              Affects proportional reward calculation. (e.g., 10h target at 100% = {(parseInt(editSettings.pointsPerTargetHour, 10) || 0) * 10} pts)
             </div>
           </div>
           <div className="form-group">
@@ -410,7 +440,7 @@ export default function App() {
               className="form-input"
               type="number"
               value={editSettings.balanceBasePoints}
-              onChange={e => setEditSettings({ ...editSettings, balanceBasePoints: parseFloat(e.target.value) || 0 })}
+              onChange={e => { const v = parseInt(e.target.value, 10); setEditSettings({ ...editSettings, balanceBasePoints: isNaN(v) ? '' : String(v) }); }}
               min="0"
               step="1"
             />
@@ -421,7 +451,7 @@ export default function App() {
               className="form-input"
               type="number"
               value={editSettings.streakBonusPoints}
-              onChange={e => setEditSettings({ ...editSettings, streakBonusPoints: parseFloat(e.target.value) || 0 })}
+              onChange={e => { const v = parseInt(e.target.value, 10); setEditSettings({ ...editSettings, streakBonusPoints: isNaN(v) ? '' : String(v) }); }}
               min="0"
               step="1"
             />
@@ -577,8 +607,8 @@ export default function App() {
               <input
                 className="form-input"
                 type="number"
-                value={editSplash.splashDuration}
-                onChange={e => setEditSplash({ ...editSplash, splashDuration: Math.min(30, Math.max(3, parseInt(e.target.value) || 5)) })}
+                value={editSplashDuration}
+                onChange={e => { const v = parseInt(e.target.value, 10); setEditSplashDuration(isNaN(v) ? '' : String(v)); }}
                 min="3"
                 max="30"
                 step="1"

@@ -2,6 +2,7 @@ import { jsx as _jsx } from "react/jsx-runtime";
 import { createContext, useContext, useReducer, useEffect } from 'react';
 const STORAGE_KEY = 'timecompass-state';
 const LEGACY_STORAGE_KEY = 'lifetracker-state';
+export const RECOVERY_KEY = 'timecompass-recovery';
 const defaultState = {
     focusAreas: [],
     projects: [],
@@ -88,6 +89,23 @@ function loadState() {
     }
     return defaultState;
 }
+export function writeRecoveryRecord(clientId, driveBackupEnabled) {
+    try {
+        localStorage.setItem(RECOVERY_KEY, JSON.stringify({ clientId, driveBackupEnabled }));
+    }
+    catch { /* ignore */ }
+}
+export function readRecoveryRecord() {
+    try {
+        const raw = localStorage.getItem(RECOVERY_KEY);
+        if (!raw)
+            return null;
+        return JSON.parse(raw);
+    }
+    catch {
+        return null;
+    }
+}
 function saveState(state) {
     try {
         // Persist googleAccessToken to sessionStorage only (token is short-lived)
@@ -100,6 +118,7 @@ function saveState(state) {
             settings: otherSettings,
             lastSavedTimestamp: now,
         }));
+        writeRecoveryRecord(state.settings.googleClientId, state.settings.driveBackupEnabled);
     }
     catch { /* ignore */ }
 }

@@ -9,7 +9,7 @@ import Statistics from './pages/Statistics';
 import WeekTemplates from './pages/WeekTemplates';
 import Modal from './components/Modal';
 import SplashScreen from './components/SplashScreen';
-import { useApp } from './store';
+import { useApp, readRecoveryRecord } from './store';
 import { calculateWeeklyScore, getWeekStart, getPeriodIndex, getPeriodDateRange, computeMaxWeekPoints, getCompletedPeriodEuros, pointsToEuros, formatEuros, generateId } from './utils';
 import { getDriveToken, syncToDrive, restoreFromDrive, attemptSilentReauth } from './utils/driveSync';
 import type { AppState, GamificationSettings, AppSettings, WalletTransaction } from './types';
@@ -49,6 +49,8 @@ export default function App() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [importPending, setImportPending] = useState<AppState | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
+  const [showDriveRecoveryPrompt, setShowDriveRecoveryPrompt] = useState(false);
+  const [driveRecoveryError, setDriveRecoveryError] = useState<string | null>(null);
 
   // Persist current week's score whenever it changes (moved from Gamification.tsx)
   const currentWeekStart = useMemo(() => getWeekStart(), []);
@@ -212,6 +214,41 @@ export default function App() {
     );
   }, []); // eslint-disable-line react-hooks/exhaustive-deps — mount-only, intentional
 
+  // On mount: if local state looks blank and a recovery record says Drive was enabled,
+  // attempt silent re-auth and restore. Falls back to a manual-restore banner.
+  useEffect(() => {
+    const isBlank = state.focusAreas.length === 0 || !state.settings.googleClientId;
+    if (!isBlank) return;
+    const record = readRecoveryRecord();
+    if (!record || !record.driveBackupEnabled) return;
+
+    const doRecovery = (token: string) => {
+      sessionStorage.setItem('googleAccessToken', token);
+      dispatch({ type: 'UPDATE_SETTINGS', payload: { googleAccessToken: token } });
+      restoreFromDrive(token).then((remote) => {
+        if (!remote) return;
+        const remoteTs = (remote as AppState).lastSavedTimestamp;
+        const localTs = state.lastSavedTimestamp;
+        if (remoteTs && (!localTs || new Date(remoteTs) > new Date(localTs))) {
+          dispatch({ type: 'LOAD_STATE', payload: remote as AppState });
+          setShowDriveRecoveryPrompt(false);
+        }
+      });
+    };
+
+    attemptSilentReauth(
+      record.clientId,
+      'https://www.googleapis.com/auth/drive.appdata',
+      (token) => {
+        if (token) {
+          doRecovery(token);
+        } else {
+          setShowDriveRecoveryPrompt(true);
+        }
+      },
+    );
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps — mount-only, intentional
+
   const saveGameSettings = () => {
     dispatch({ type: 'UPDATE_GAMIFICATION_SETTINGS', payload: {
       enabled: editSettings.enabled,
@@ -324,6 +361,60 @@ export default function App() {
             </button>
           ) : (
             <span className="reauth-banner-hint">Set a Client ID in Timeline</span>
+          )}
+        </div>
+      )}
+      {showDriveRecoveryPrompt && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            zIndex: 1000,
+            background: 'var(--surface)',
+            borderTop: '1px solid var(--border)',
+            padding: '12px 16px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <span className="text-sm">Your data is on Google Drive — tap to restore</span>
+            <button
+              className="btn btn-sm btn-primary"
+              onClick={() => {
+                const record = readRecoveryRecord();
+                if (!record) return;
+                setDriveRecoveryError(null);
+                attemptSilentReauth(
+                  record.clientId,
+                  'https://www.googleapis.com/auth/drive.appdata',
+                  (token) => {
+                    if (!token) { setDriveRecoveryError('Sign-in failed. Please try again.'); return; }
+                    sessionStorage.setItem('googleAccessToken', token);
+                    dispatch({ type: 'UPDATE_SETTINGS', payload: { googleAccessToken: token } });
+                    restoreFromDrive(token).then((remote) => {
+                      if (!remote) { setDriveRecoveryError('No backup found on Drive.'); return; }
+                      const remoteTs = (remote as AppState).lastSavedTimestamp;
+                      const localTs = state.lastSavedTimestamp;
+                      if (remoteTs && (!localTs || new Date(remoteTs) > new Date(localTs))) {
+                        dispatch({ type: 'LOAD_STATE', payload: remote as AppState });
+                        setShowDriveRecoveryPrompt(false);
+                      } else {
+                        setDriveRecoveryError('Local state is already up to date.');
+                      }
+                    });
+                  },
+                );
+              }}
+            >
+              Restore
+            </button>
+          </div>
+          {driveRecoveryError && (
+            <span className="text-sm" style={{ color: 'var(--error)' }}>{driveRecoveryError}</span>
           )}
         </div>
       )}

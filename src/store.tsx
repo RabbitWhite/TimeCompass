@@ -3,6 +3,7 @@ import type { AppState, AppAction, WalletTransaction } from './types';
 
 const STORAGE_KEY = 'timecompass-state';
 const LEGACY_STORAGE_KEY = 'lifetracker-state';
+export const RECOVERY_KEY = 'timecompass-recovery';
 
 const defaultState: AppState = {
   focusAreas: [],
@@ -92,6 +93,22 @@ function loadState(): AppState {
   return defaultState;
 }
 
+export function writeRecoveryRecord(clientId: string, driveBackupEnabled: boolean): void {
+  try {
+    localStorage.setItem(RECOVERY_KEY, JSON.stringify({ clientId, driveBackupEnabled }));
+  } catch { /* ignore */ }
+}
+
+export function readRecoveryRecord(): { clientId: string; driveBackupEnabled: boolean } | null {
+  try {
+    const raw = localStorage.getItem(RECOVERY_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as { clientId: string; driveBackupEnabled: boolean };
+  } catch {
+    return null;
+  }
+}
+
 function saveState(state: AppState) {
   try {
     // Persist googleAccessToken to sessionStorage only (token is short-lived)
@@ -104,6 +121,7 @@ function saveState(state: AppState) {
       settings: otherSettings,
       lastSavedTimestamp: now,
     }));
+    writeRecoveryRecord(state.settings.googleClientId, state.settings.driveBackupEnabled);
   } catch { /* ignore */ }
 }
 

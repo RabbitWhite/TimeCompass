@@ -9,7 +9,7 @@ import Statistics from './pages/Statistics';
 import WeekTemplates from './pages/WeekTemplates';
 import Modal from './components/Modal';
 import SplashScreen from './components/SplashScreen';
-import { useApp, readRecoveryRecord } from './store';
+import { useApp, readRecoveryRecord, writeRecoveryRecord } from './store';
 import { calculateWeeklyScore, getWeekStart, getPeriodIndex, getPeriodDateRange, computeMaxWeekPoints, getCompletedPeriodEuros, pointsToEuros, formatEuros, generateId } from './utils';
 import { getDriveToken, syncToDrive, restoreFromDrive, attemptSilentReauth } from './utils/driveSync';
 import type { AppState, GamificationSettings, AppSettings, WalletTransaction } from './types';
@@ -51,6 +51,8 @@ export default function App() {
   const [importError, setImportError] = useState<string | null>(null);
   const [showDriveRecoveryPrompt, setShowDriveRecoveryPrompt] = useState(false);
   const [driveRecoveryError, setDriveRecoveryError] = useState<string | null>(null);
+  const [showFirstRunClientIdForm, setShowFirstRunClientIdForm] = useState(false);
+  const [firstRunClientId, setFirstRunClientId] = useState('');
 
   // Persist current week's score whenever it changes (moved from Gamification.tsx)
   const currentWeekStart = useMemo(() => getWeekStart(), []);
@@ -281,9 +283,88 @@ export default function App() {
     setShowData(false);
   };
 
+  const isFirstRun = state.focusAreas.length === 0 && !state.settings.googleClientId && !showDriveRecoveryPrompt;
+
   return (
     <>
     <SplashScreen />
+    {isFirstRun && (
+      <div
+        style={{
+          position: 'fixed', inset: 0, zIndex: 100,
+          background: '#f0e6d0',
+          backgroundImage: "url('/Lifetracker/background.png')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center top',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '24px',
+          gap: '24px',
+        }}
+      >
+        <h1 style={{ margin: 0, fontSize: '2rem', color: 'var(--text)' }}>Time Compass</h1>
+        <p style={{ margin: 0, color: 'var(--text-secondary)', textAlign: 'center', maxWidth: 300 }}>
+          Welcome! Restore your data to get started.
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%', maxWidth: 320 }}>
+          <button className="btn btn-primary btn-block" onClick={() => setShowData(true)}>
+            Import backup file
+          </button>
+          {!showFirstRunClientIdForm ? (
+            <button className="btn btn-secondary btn-block" onClick={() => setShowFirstRunClientIdForm(true)}>
+              Connect Google Drive
+            </button>
+          ) : (
+            <div
+              style={{
+                background: 'var(--surface)',
+                borderRadius: 8,
+                padding: 16,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+              }}
+            >
+              <label className="form-label">Google Client ID</label>
+              <input
+                className="form-input"
+                type="text"
+                placeholder="your-id.apps.googleusercontent.com"
+                value={firstRunClientId}
+                onChange={e => setFirstRunClientId(e.target.value)}
+                autoFocus
+              />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => { setShowFirstRunClientIdForm(false); setFirstRunClientId(''); }}
+                  type="button"
+                >
+                  Cancel
+                </button>
+                <button
+                  className="btn btn-primary btn-sm"
+                  disabled={!firstRunClientId.trim()}
+                  onClick={() => {
+                    const cid = firstRunClientId.trim();
+                    dispatch({ type: 'UPDATE_SETTINGS', payload: { googleClientId: cid } });
+                    writeRecoveryRecord(cid, true);
+                    setShowDriveRecoveryPrompt(true);
+                    setShowFirstRunClientIdForm(false);
+                    setFirstRunClientId('');
+                  }}
+                  type="button"
+                >
+                  Save &amp; connect
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    )}
     <div className="app-layout">
       <header className="app-header">
         <h1>Time Compass</h1>

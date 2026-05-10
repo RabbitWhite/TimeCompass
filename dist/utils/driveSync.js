@@ -96,7 +96,11 @@ export function attemptSilentReauth(clientId, scope, callback) {
                 callback(!response.error && response.access_token ? response.access_token : null);
             },
         });
-        tokenClient?.requestAccessToken({ prompt: '' });
+        if (!tokenClient) {
+            callback(null);
+            return;
+        }
+        tokenClient.requestAccessToken({ prompt: '' });
     }
     catch {
         callback(null);

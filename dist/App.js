@@ -188,6 +188,24 @@ export default function App() {
             doRestore(newToken);
         });
     }, []); // eslint-disable-line react-hooks/exhaustive-deps — mount-only, intentional
+    function waitForGIS(maxMs = 5000) {
+        return new Promise(resolve => {
+            const interval = 100;
+            const maxAttempts = maxMs / interval;
+            let attempts = 0;
+            const id = setInterval(() => {
+                if (window.google?.accounts?.oauth2) {
+                    clearInterval(id);
+                    resolve(true);
+                    return;
+                }
+                if (++attempts >= maxAttempts) {
+                    clearInterval(id);
+                    resolve(false);
+                }
+            }, interval);
+        });
+    }
     // On mount: if local state looks blank and a recovery record says Drive was enabled,
     // attempt silent re-auth and restore. Falls back to a manual-restore banner.
     useEffect(() => {
@@ -211,14 +229,21 @@ export default function App() {
                 }
             });
         };
-        attemptSilentReauth(record.clientId, 'https://www.googleapis.com/auth/drive.appdata', (token) => {
-            if (token) {
-                doRecovery(token);
-            }
-            else {
+        (async () => {
+            const gisReady = await waitForGIS();
+            if (!gisReady) {
                 setShowDriveRecoveryPrompt(true);
+                return;
             }
-        });
+            attemptSilentReauth(record.clientId, 'https://www.googleapis.com/auth/drive.appdata', (token) => {
+                if (token) {
+                    doRecovery(token);
+                }
+                else {
+                    setShowDriveRecoveryPrompt(true);
+                }
+            });
+        })();
     }, []); // eslint-disable-line react-hooks/exhaustive-deps — mount-only, intentional
     const saveGameSettings = () => {
         dispatch({ type: 'UPDATE_GAMIFICATION_SETTINGS', payload: {
@@ -313,6 +338,10 @@ export default function App() {
                                             if (!record)
                                                 return;
                                             setDriveRecoveryError(null);
+                                            if (!window.google?.accounts?.oauth2) {
+                                                setDriveRecoveryError('Google sign-in is not ready yet, please wait a moment and try again.');
+                                                return;
+                                            }
                                             attemptSilentReauth(record.clientId, 'https://www.googleapis.com/auth/drive.appdata', (token) => {
                                                 if (!token) {
                                                     setDriveRecoveryError('Sign-in failed. Please try again.');

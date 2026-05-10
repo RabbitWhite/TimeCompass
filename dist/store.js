@@ -80,6 +80,9 @@ function loadState() {
                 walletTransactions: parsed.walletTransactions || [],
             };
             console.log(`[store] Loaded state: ${loaded.focusAreas.length} focusAreas, ${loaded.timeEntries.length} timeEntries`);
+            if (loaded.settings.googleClientId && loaded.settings.driveBackupEnabled) {
+                writeRecoveryRecord(loaded.settings.googleClientId, loaded.settings.driveBackupEnabled);
+            }
             return loaded;
         }
     }
@@ -91,6 +94,8 @@ function loadState() {
 }
 export function writeRecoveryRecord(clientId, driveBackupEnabled) {
     try {
+        if (!clientId || !driveBackupEnabled)
+            return;
         localStorage.setItem(RECOVERY_KEY, JSON.stringify({ clientId, driveBackupEnabled }));
     }
     catch { /* ignore */ }

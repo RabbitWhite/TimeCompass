@@ -417,14 +417,8 @@ export default function App() {
                     dispatch({ type: 'UPDATE_SETTINGS', payload: { googleAccessToken: token } });
                     restoreFromDrive(token).then((remote) => {
                       if (!remote) { setDriveRecoveryError('No backup found on Drive.'); return; }
-                      const remoteTs = (remote as AppState).lastSavedTimestamp;
-                      const localTs = state.lastSavedTimestamp;
-                      if (remoteTs && (!localTs || new Date(remoteTs) > new Date(localTs))) {
-                        dispatch({ type: 'LOAD_STATE', payload: remote as AppState });
-                        setShowDriveRecoveryPrompt(false);
-                      } else {
-                        setDriveRecoveryError('Local state is already up to date.');
-                      }
+                      dispatch({ type: 'LOAD_STATE', payload: remote as AppState });
+                      setShowDriveRecoveryPrompt(false);
                     });
                   },
                 );

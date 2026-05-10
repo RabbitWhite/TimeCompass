@@ -214,6 +214,18 @@ export default function App() {
     );
   }, []); // eslint-disable-line react-hooks/exhaustive-deps — mount-only, intentional
 
+  function waitForGIS(maxMs = 5000): Promise<boolean> {
+    return new Promise(resolve => {
+      const interval = 100;
+      const maxAttempts = maxMs / interval;
+      let attempts = 0;
+      const id = setInterval(() => {
+        if ((window as any).google?.accounts?.oauth2) { clearInterval(id); resolve(true); return; }
+        if (++attempts >= maxAttempts) { clearInterval(id); resolve(false); }
+      }, interval);
+    });
+  }
+
   // On mount: if local state looks blank and a recovery record says Drive was enabled,
   // attempt silent re-auth and restore. Falls back to a manual-restore banner.
   useEffect(() => {
@@ -236,17 +248,21 @@ export default function App() {
       });
     };
 
-    attemptSilentReauth(
-      record.clientId,
-      'https://www.googleapis.com/auth/drive.appdata',
-      (token) => {
-        if (token) {
-          doRecovery(token);
-        } else {
-          setShowDriveRecoveryPrompt(true);
-        }
-      },
-    );
+    (async () => {
+      const gisReady = await waitForGIS();
+      if (!gisReady) { setShowDriveRecoveryPrompt(true); return; }
+      attemptSilentReauth(
+        record.clientId,
+        'https://www.googleapis.com/auth/drive.appdata',
+        (token) => {
+          if (token) {
+            doRecovery(token);
+          } else {
+            setShowDriveRecoveryPrompt(true);
+          }
+        },
+      );
+    })();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps — mount-only, intentional
 
   const saveGameSettings = () => {
@@ -388,6 +404,10 @@ export default function App() {
                 const record = readRecoveryRecord();
                 if (!record) return;
                 setDriveRecoveryError(null);
+                if (!(window as any).google?.accounts?.oauth2) {
+                  setDriveRecoveryError('Google sign-in is not ready yet, please wait a moment and try again.');
+                  return;
+                }
                 attemptSilentReauth(
                   record.clientId,
                   'https://www.googleapis.com/auth/drive.appdata',

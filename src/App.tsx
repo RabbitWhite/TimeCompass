@@ -12,6 +12,7 @@ import SplashScreen from './components/SplashScreen';
 import { useApp, readRecoveryRecord, writeRecoveryRecord } from './store';
 import { calculateWeeklyScore, getWeekStart, getPeriodIndex, getPeriodDateRange, computeMaxWeekPoints, getCompletedPeriodEuros, pointsToEuros, formatEuros, generateId } from './utils';
 import { getDriveToken, syncToDrive, restoreFromDrive, attemptSilentReauth } from './utils/driveSync';
+import { triggerBackupDownload, AUTO_BACKUP_INTERVAL_MS, AUTO_BACKUP_KEY } from './utils/backup';
 import type { AppState, GamificationSettings, AppSettings, WalletTransaction } from './types';
 import './App.css';
 
@@ -53,6 +54,7 @@ export default function App() {
   const [driveRecoveryError, setDriveRecoveryError] = useState<string | null>(null);
   const [showFirstRunClientIdForm, setShowFirstRunClientIdForm] = useState(false);
   const [firstRunClientId, setFirstRunClientId] = useState('');
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Persist current week's score whenever it changes (moved from Gamification.tsx)
   const currentWeekStart = useMemo(() => getWeekStart(), []);
@@ -223,6 +225,26 @@ export default function App() {
     if (!record || !record.driveBackupEnabled) return;
     setShowDriveRecoveryPrompt(true);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps — mount-only, intentional
+
+  // Auto-dismiss toast after 3 seconds
+  useEffect(() => {
+    if (!toastMessage) return;
+    const id = setTimeout(() => setToastMessage(null), 3000);
+    return () => clearTimeout(id);
+  }, [toastMessage]);
+
+  // Trigger a local backup download every 6 hours while the app is open
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (stateRef.current.focusAreas.length === 0) return;
+      const last = localStorage.getItem(AUTO_BACKUP_KEY);
+      if (last && Date.now() - Number(last) < AUTO_BACKUP_INTERVAL_MS) return;
+      triggerBackupDownload(stateRef.current);
+      localStorage.setItem(AUTO_BACKUP_KEY, String(Date.now()));
+      setToastMessage('Backup saved to Downloads');
+    }, 60_000);
+    return () => clearInterval(id);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps — mount-only, uses stateRef
 
   const saveGameSettings = () => {
     dispatch({ type: 'UPDATE_GAMIFICATION_SETTINGS', payload: {
@@ -828,6 +850,26 @@ export default function App() {
         </Modal>
       )}
     </div>
+      {toastMessage && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: 24,
+            right: 16,
+            zIndex: 1200,
+            background: 'var(--surface)',
+            color: 'var(--text)',
+            border: '1px solid var(--border)',
+            borderRadius: 8,
+            padding: '10px 16px',
+            fontSize: 14,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+            pointerEvents: 'none',
+          }}
+        >
+          {toastMessage}
+        </div>
+      )}
     </>
   );
 }

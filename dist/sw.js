@@ -1,4 +1,4 @@
-const CACHE_NAME = 'timecompass-4f474f3';
+const CACHE_NAME = 'timecompass-08d6232';
 const BASE = '/Lifetracker/';
 
 // Critical files: if any of these fail to cache, the SW install fails (app won't work)

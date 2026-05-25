@@ -13,6 +13,7 @@ import SplashScreen from './components/SplashScreen.js';
 import { useApp, readRecoveryRecord, writeRecoveryRecord } from './store.js';
 import { calculateWeeklyScore, getWeekStart, getPeriodIndex, getPeriodDateRange, computeMaxWeekPoints, getCompletedPeriodEuros, pointsToEuros, formatEuros, generateId } from './utils.js';
 import { getDriveToken, syncToDrive, restoreFromDrive, attemptSilentReauth } from './utils/driveSync.js';
+import { triggerBackupDownload, AUTO_BACKUP_INTERVAL_MS, AUTO_BACKUP_KEY } from './utils/backup.js';
 export default function App() {
     const { state, dispatch } = useApp();
     const [showData, setShowData] = useState(false);
@@ -43,6 +44,7 @@ export default function App() {
     const [driveRecoveryError, setDriveRecoveryError] = useState(null);
     const [showFirstRunClientIdForm, setShowFirstRunClientIdForm] = useState(false);
     const [firstRunClientId, setFirstRunClientId] = useState('');
+    const [toastMessage, setToastMessage] = useState(null);
     // Persist current week's score whenever it changes (moved from Gamification.tsx)
     const currentWeekStart = useMemo(() => getWeekStart(), []);
     const prevCompletedPeriodIdx = useMemo(() => getPeriodIndex(currentWeekStart) - 1, [currentWeekStart]);
@@ -199,6 +201,27 @@ export default function App() {
             return;
         setShowDriveRecoveryPrompt(true);
     }, []); // eslint-disable-line react-hooks/exhaustive-deps — mount-only, intentional
+    // Auto-dismiss toast after 3 seconds
+    useEffect(() => {
+        if (!toastMessage)
+            return;
+        const id = setTimeout(() => setToastMessage(null), 3000);
+        return () => clearTimeout(id);
+    }, [toastMessage]);
+    // Trigger a local backup download every 6 hours while the app is open
+    useEffect(() => {
+        const id = setInterval(() => {
+            if (stateRef.current.focusAreas.length === 0)
+                return;
+            const last = localStorage.getItem(AUTO_BACKUP_KEY);
+            if (last && Date.now() - Number(last) < AUTO_BACKUP_INTERVAL_MS)
+                return;
+            triggerBackupDownload(stateRef.current);
+            localStorage.setItem(AUTO_BACKUP_KEY, String(Date.now()));
+            setToastMessage('Backup saved to Downloads');
+        }, 60000);
+        return () => clearInterval(id);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps — mount-only, uses stateRef
     const saveGameSettings = () => {
         dispatch({ type: 'UPDATE_GAMIFICATION_SETTINGS', payload: {
                 enabled: editSettings.enabled,
@@ -352,5 +375,18 @@ export default function App() {
                                                             dispatch({ type: 'HARD_RESET' });
                                                             setShowHardResetConfirm(false);
                                                             setShowGameSettings(false);
-                                                        }, type: "button", children: "Delete all history" })] })] }))] }), _jsxs("div", { className: "modal-actions", children: [_jsx("button", { className: "btn btn-secondary", onClick: () => setShowGameSettings(false), children: "Cancel" }), _jsx("button", { className: "btn btn-primary", onClick: saveGameSettings, children: "Save" })] })] }))] })] }));
+                                                        }, type: "button", children: "Delete all history" })] })] }))] }), _jsxs("div", { className: "modal-actions", children: [_jsx("button", { className: "btn btn-secondary", onClick: () => setShowGameSettings(false), children: "Cancel" }), _jsx("button", { className: "btn btn-primary", onClick: saveGameSettings, children: "Save" })] })] }))] }), toastMessage && (_jsx("div", { style: {
+                    position: 'fixed',
+                    bottom: 24,
+                    right: 16,
+                    zIndex: 1200,
+                    background: 'var(--surface)',
+                    color: 'var(--text)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 8,
+                    padding: '10px 16px',
+                    fontSize: 14,
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+                    pointerEvents: 'none',
+                }, children: toastMessage }))] }));
 }

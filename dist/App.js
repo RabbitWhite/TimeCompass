@@ -12,7 +12,7 @@ import Modal from './components/Modal.js';
 import SplashScreen from './components/SplashScreen.js';
 import { useApp, readRecoveryRecord, writeRecoveryRecord } from './store.js';
 import { calculateWeeklyScore, getWeekStart, getPeriodIndex, getPeriodDateRange, computeMaxWeekPoints, getCompletedPeriodEuros, pointsToEuros, formatEuros, generateId } from './utils.js';
-import { getDriveToken, syncToDrive, restoreFromDrive, attemptSilentReauth } from './utils/driveSync.js';
+import { getDriveToken, storeToken, TOKEN_EXPIRY_KEY, syncToDrive, restoreFromDrive, attemptSilentReauth } from './utils/driveSync.js';
 import { triggerBackupDownload, AUTO_BACKUP_INTERVAL_MS, AUTO_BACKUP_KEY } from './utils/backup.js';
 export default function App() {
     const { state, dispatch } = useApp();
@@ -125,7 +125,7 @@ export default function App() {
                 callback: (response) => {
                     if (response.error)
                         return;
-                    dispatch({ type: 'UPDATE_SETTINGS', payload: { googleAccessToken: response.access_token } });
+                    storeToken(response.access_token);
                     setDriveNeedsReauth(false);
                 },
             });
@@ -142,9 +142,20 @@ export default function App() {
         const handleVisibilityChange = async () => {
             if (document.visibilityState !== 'hidden')
                 return;
-            const token = getDriveToken();
+            let token = getDriveToken();
             if (!token)
                 return;
+            const expiry = Number(localStorage.getItem(TOKEN_EXPIRY_KEY) ?? '0');
+            if (expiry - Date.now() < 5 * 60 * 1000) {
+                await new Promise((resolve) => {
+                    attemptSilentReauth(stateRef.current.settings.googleClientId, 'https://www.googleapis.com/auth/drive.appdata', (newToken) => {
+                        if (newToken)
+                            storeToken(newToken);
+                        resolve();
+                    });
+                });
+                token = getDriveToken() ?? token;
+            }
             const s = stateRef.current;
             const { lastSavedTimestamp, settings: { driveLastSynced, driveFileId } } = s;
             // Only upload if local state is newer than last Drive sync
@@ -189,7 +200,7 @@ export default function App() {
         attemptSilentReauth(state.settings.googleClientId, 'https://www.googleapis.com/auth/drive.appdata', (newToken) => {
             if (!newToken)
                 return;
-            dispatch({ type: 'UPDATE_SETTINGS', payload: { googleAccessToken: newToken } });
+            storeToken(newToken);
             setDriveNeedsReauth(false);
             doRestore(newToken);
         });
@@ -349,8 +360,7 @@ export default function App() {
                                                     setDriveRecoveryError('Sign-in failed. Please try again.');
                                                     return;
                                                 }
-                                                sessionStorage.setItem('googleAccessToken', token);
-                                                dispatch({ type: 'UPDATE_SETTINGS', payload: { googleAccessToken: token } });
+                                                storeToken(token);
                                                 restoreFromDrive(token).then((remote) => {
                                                     if (!remote) {
                                                         setDriveRecoveryError('No backup found on Drive.');

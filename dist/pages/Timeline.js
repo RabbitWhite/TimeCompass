@@ -3,7 +3,7 @@ import { useState, useMemo } from 'react';
 import { useApp } from '../store.js';
 import Modal from '../components/Modal.js';
 import { generateId, formatDate, formatTime, getDaysBetween, isSameDay } from '../utils.js';
-import { attemptSilentReauth } from '../utils/driveSync.js';
+import { attemptSilentReauth, storeToken, clearDriveToken } from '../utils/driveSync.js';
 const TIME_WINDOWS = [
     { label: '1 Day', days: 1 },
     { label: '3 Days', days: 3 },
@@ -79,15 +79,18 @@ export default function Timeline() {
                     if (response.error)
                         return;
                     const token = response.access_token;
-                    dispatch({ type: 'UPDATE_SETTINGS', payload: { googleAccessToken: token, googleCalendarConnected: true } });
+                    storeToken(token);
+                    dispatch({ type: 'UPDATE_SETTINGS', payload: { googleCalendarConnected: true } });
                     const timeMin = new Date().toISOString();
                     const timeMax = new Date(Date.now() + windowDays * 86400000).toISOString();
                     const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`, { headers: { Authorization: `Bearer ${token}` } });
                     if (res.status === 401) {
-                        dispatch({ type: 'UPDATE_SETTINGS', payload: { googleAccessToken: '', googleCalendarConnected: false } });
+                        clearDriveToken();
+                        dispatch({ type: 'UPDATE_SETTINGS', payload: { googleCalendarConnected: false } });
                         const newToken = await new Promise(resolve => attemptSilentReauth(clientId.trim(), 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/drive.appdata', resolve));
                         if (newToken) {
-                            dispatch({ type: 'UPDATE_SETTINGS', payload: { googleAccessToken: newToken, googleCalendarConnected: true } });
+                            storeToken(newToken);
+                            dispatch({ type: 'UPDATE_SETTINGS', payload: { googleCalendarConnected: true } });
                             const retryRes = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`, { headers: { Authorization: `Bearer ${newToken}` } });
                             if (retryRes.ok) {
                                 const retryData = await retryRes.json();
@@ -108,7 +111,8 @@ export default function Timeline() {
                                 setShowSync(false);
                                 return;
                             }
-                            dispatch({ type: 'UPDATE_SETTINGS', payload: { googleAccessToken: '', googleCalendarConnected: false } });
+                            clearDriveToken();
+                            dispatch({ type: 'UPDATE_SETTINGS', payload: { googleCalendarConnected: false } });
                         }
                         setShowSync(false);
                         alert('Google Calendar session expired — please reconnect.');
@@ -139,7 +143,7 @@ export default function Timeline() {
         }
     };
     const today = new Date();
-    return (_jsxs("div", { children: [_jsxs("div", { className: "section-header", children: [_jsx("span", { className: "section-title", children: "Timeline" }), _jsxs("button", { className: "btn btn-secondary btn-sm", onClick: () => setShowSync(true), children: [_jsx("svg", { viewBox: "0 0 24 24", width: "14", height: "14", fill: "currentColor", children: _jsx("path", { d: "M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0 0 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 0 0 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z" }) }), "Sync"] })] }), _jsx("div", { className: "timeline-controls", children: TIME_WINDOWS.map(tw => (_jsx("button", { className: `timeline-chip ${windowDays === tw.days ? 'active' : ''}`, onClick: () => setWindow(tw.days), children: tw.label }, tw.days))) }), state.settings.googleCalendarConnected && (_jsxs("div", { className: "sync-banner", children: [_jsx("svg", { viewBox: "0 0 24 24", width: "20", height: "20", fill: "var(--success)", children: _jsx("path", { d: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" }) }), _jsx("p", { children: "Google Calendar connected" }), _jsx("button", { className: "btn btn-ghost btn-sm", onClick: () => dispatch({ type: 'UPDATE_SETTINGS', payload: { googleCalendarConnected: false, googleAccessToken: '' } }), children: "Disconnect" })] })), eventsByDay.map(({ date, events }) => {
+    return (_jsxs("div", { children: [_jsxs("div", { className: "section-header", children: [_jsx("span", { className: "section-title", children: "Timeline" }), _jsxs("button", { className: "btn btn-secondary btn-sm", onClick: () => setShowSync(true), children: [_jsx("svg", { viewBox: "0 0 24 24", width: "14", height: "14", fill: "currentColor", children: _jsx("path", { d: "M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0 0 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 0 0 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z" }) }), "Sync"] })] }), _jsx("div", { className: "timeline-controls", children: TIME_WINDOWS.map(tw => (_jsx("button", { className: `timeline-chip ${windowDays === tw.days ? 'active' : ''}`, onClick: () => setWindow(tw.days), children: tw.label }, tw.days))) }), state.settings.googleCalendarConnected && (_jsxs("div", { className: "sync-banner", children: [_jsx("svg", { viewBox: "0 0 24 24", width: "20", height: "20", fill: "var(--success)", children: _jsx("path", { d: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" }) }), _jsx("p", { children: "Google Calendar connected" }), _jsx("button", { className: "btn btn-ghost btn-sm", onClick: () => { clearDriveToken(); dispatch({ type: 'UPDATE_SETTINGS', payload: { googleCalendarConnected: false } }); }, children: "Disconnect" })] })), eventsByDay.map(({ date, events }) => {
                 const isToday = isSameDay(date, today);
                 if (events.length === 0 && !isToday)
                     return null;

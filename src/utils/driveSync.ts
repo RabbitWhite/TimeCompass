@@ -99,6 +99,7 @@ export async function syncToDrive(
   state: object,
   existingFileId: string | null = null
 ): Promise<string | null> {
+  if (!Array.isArray((state as any).focusAreas) || (state as any).focusAreas.length === 0) return null;
   return uploadBackup(token, state, existingFileId);
 }
 

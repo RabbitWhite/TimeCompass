@@ -74,6 +74,8 @@ export async function uploadBackup(token, data, existingFileId = null) {
     }
 }
 export async function syncToDrive(token, state, existingFileId = null) {
+    if (!Array.isArray(state.focusAreas) || state.focusAreas.length === 0)
+        return null;
     return uploadBackup(token, state, existingFileId);
 }
 export async function restoreFromDrive(token) {

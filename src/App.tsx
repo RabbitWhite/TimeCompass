@@ -193,6 +193,7 @@ export default function App() {
     const doRestore = async (t: string) => {
       const remote = await restoreFromDrive(t) as AppState | null;
       if (!remote) return;
+      if (!Array.isArray(remote.focusAreas) || remote.focusAreas.length === 0) return;
       const remoteTs = (remote as AppState).lastSavedTimestamp;
       const localTs = state.lastSavedTimestamp;
       if (remoteTs && (!localTs || new Date(remoteTs) > new Date(localTs))) {
@@ -473,6 +474,10 @@ export default function App() {
                     dispatch({ type: 'UPDATE_SETTINGS', payload: { googleAccessToken: token } });
                     restoreFromDrive(token).then((remote) => {
                       if (!remote) { setDriveRecoveryError('No backup found on Drive.'); return; }
+                      if (!Array.isArray((remote as AppState).focusAreas) || (remote as AppState).focusAreas.length === 0) {
+                        setDriveRecoveryError('Drive backup is empty. Local data was kept.');
+                        return;
+                      }
                       dispatch({ type: 'LOAD_STATE', payload: remote as AppState });
                       setShowDriveRecoveryPrompt(false);
                     });

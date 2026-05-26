@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useApp } from '../store';
 import Modal from '../components/Modal';
 import { generateId, formatDate, formatTime, getDaysBetween, isSameDay } from '../utils';
-import { attemptSilentReauth } from '../utils/driveSync';
+import { attemptSilentReauth, storeToken, clearDriveToken } from '../utils/driveSync';
 import type { CalendarEvent } from '../types';
 
 const TIME_WINDOWS = [
@@ -89,7 +89,8 @@ export default function Timeline() {
         callback: async (response: any) => {
           if (response.error) return;
           const token = response.access_token;
-          dispatch({ type: 'UPDATE_SETTINGS', payload: { googleAccessToken: token, googleCalendarConnected: true } });
+          storeToken(token);
+          dispatch({ type: 'UPDATE_SETTINGS', payload: { googleCalendarConnected: true } });
 
           const timeMin = new Date().toISOString();
           const timeMax = new Date(Date.now() + windowDays * 86400000).toISOString();
@@ -98,7 +99,8 @@ export default function Timeline() {
             { headers: { Authorization: `Bearer ${token}` } }
           );
           if (res.status === 401) {
-            dispatch({ type: 'UPDATE_SETTINGS', payload: { googleAccessToken: '', googleCalendarConnected: false } });
+            clearDriveToken();
+            dispatch({ type: 'UPDATE_SETTINGS', payload: { googleCalendarConnected: false } });
             const newToken = await new Promise<string | null>(resolve =>
               attemptSilentReauth(
                 clientId.trim(),
@@ -107,7 +109,8 @@ export default function Timeline() {
               )
             );
             if (newToken) {
-              dispatch({ type: 'UPDATE_SETTINGS', payload: { googleAccessToken: newToken, googleCalendarConnected: true } });
+              storeToken(newToken);
+              dispatch({ type: 'UPDATE_SETTINGS', payload: { googleCalendarConnected: true } });
               const retryRes = await fetch(
                 `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`,
                 { headers: { Authorization: `Bearer ${newToken}` } }
@@ -131,7 +134,8 @@ export default function Timeline() {
                 setShowSync(false);
                 return;
               }
-              dispatch({ type: 'UPDATE_SETTINGS', payload: { googleAccessToken: '', googleCalendarConnected: false } });
+              clearDriveToken();
+              dispatch({ type: 'UPDATE_SETTINGS', payload: { googleCalendarConnected: false } });
             }
             setShowSync(false);
             alert('Google Calendar session expired — please reconnect.');
@@ -195,7 +199,7 @@ export default function Timeline() {
           <p>Google Calendar connected</p>
           <button
             className="btn btn-ghost btn-sm"
-            onClick={() => dispatch({ type: 'UPDATE_SETTINGS', payload: { googleCalendarConnected: false, googleAccessToken: '' } })}
+            onClick={() => { clearDriveToken(); dispatch({ type: 'UPDATE_SETTINGS', payload: { googleCalendarConnected: false } }); }}
           >
             Disconnect
           </button>

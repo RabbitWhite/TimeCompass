@@ -173,6 +173,8 @@ export default function App() {
             const remote = await restoreFromDrive(t);
             if (!remote)
                 return;
+            if (!Array.isArray(remote.focusAreas) || remote.focusAreas.length === 0)
+                return;
             const remoteTs = remote.lastSavedTimestamp;
             const localTs = state.lastSavedTimestamp;
             if (remoteTs && (!localTs || new Date(remoteTs) > new Date(localTs))) {
@@ -352,6 +354,10 @@ export default function App() {
                                                 restoreFromDrive(token).then((remote) => {
                                                     if (!remote) {
                                                         setDriveRecoveryError('No backup found on Drive.');
+                                                        return;
+                                                    }
+                                                    if (!Array.isArray(remote.focusAreas) || remote.focusAreas.length === 0) {
+                                                        setDriveRecoveryError('Drive backup is empty. Local data was kept.');
                                                         return;
                                                     }
                                                     dispatch({ type: 'LOAD_STATE', payload: remote });

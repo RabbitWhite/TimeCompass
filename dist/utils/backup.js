@@ -1,4 +1,4 @@
-export const AUTO_BACKUP_INTERVAL_MS = 6 * 60 * 60 * 1000;
+export const AUTO_BACKUP_INTERVAL_MS = 1 * 60 * 60 * 1000;
 export const AUTO_BACKUP_KEY = 'timecompass-last-auto-backup';
 export function triggerBackupDownload(state) {
     const json = JSON.stringify(state, null, 2);

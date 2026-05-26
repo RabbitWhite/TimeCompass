@@ -1,8 +1,24 @@
 const DRIVE_FILES_URL = 'https://www.googleapis.com/drive/v3/files';
 const DRIVE_UPLOAD_URL = 'https://www.googleapis.com/upload/drive/v3/files';
 const BACKUP_FILENAME = 'timecompass-backup.json';
+export const TOKEN_STORAGE_KEY = 'timecompass-token';
+export const TOKEN_EXPIRY_KEY = 'timecompass-token-expiry';
+export function storeToken(token, expirySeconds = 3500) {
+    localStorage.setItem(TOKEN_STORAGE_KEY, token);
+    localStorage.setItem(TOKEN_EXPIRY_KEY, String(Date.now() + expirySeconds * 1000));
+}
 export function getDriveToken() {
-    return sessionStorage.getItem('googleAccessToken');
+    const token = localStorage.getItem(TOKEN_STORAGE_KEY);
+    if (!token)
+        return null;
+    const expiry = Number(localStorage.getItem(TOKEN_EXPIRY_KEY) ?? '0');
+    if (Date.now() >= expiry)
+        return null;
+    return token;
+}
+export function clearDriveToken() {
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
+    localStorage.removeItem(TOKEN_EXPIRY_KEY);
 }
 export async function checkDriveScope(token) {
     try {

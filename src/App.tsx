@@ -11,7 +11,7 @@ import Modal from './components/Modal';
 import SplashScreen from './components/SplashScreen';
 import { useApp, readRecoveryRecord, writeRecoveryRecord } from './store';
 import { calculateWeeklyScore, getWeekStart, getPeriodIndex, getPeriodDateRange, computeMaxWeekPoints, getCompletedPeriodEuros, pointsToEuros, formatEuros, generateId } from './utils';
-import { getDriveToken, syncToDrive, restoreFromDrive, attemptSilentReauth } from './utils/driveSync';
+import { getDriveToken, storeToken, clearDriveToken, syncToDrive, restoreFromDrive, attemptSilentReauth } from './utils/driveSync';
 import { triggerBackupDownload, AUTO_BACKUP_INTERVAL_MS, AUTO_BACKUP_KEY } from './utils/backup';
 import type { AppState, GamificationSettings, AppSettings, WalletTransaction } from './types';
 import './App.css';
@@ -142,7 +142,7 @@ export default function App() {
         scope: 'https://www.googleapis.com/auth/drive.appdata',
         callback: (response: any) => {
           if (response.error) return;
-          dispatch({ type: 'UPDATE_SETTINGS', payload: { googleAccessToken: response.access_token } });
+          storeToken(response.access_token);
           setDriveNeedsReauth(false);
         },
       });
@@ -212,7 +212,7 @@ export default function App() {
       'https://www.googleapis.com/auth/drive.appdata',
       (newToken) => {
         if (!newToken) return;
-        dispatch({ type: 'UPDATE_SETTINGS', payload: { googleAccessToken: newToken } });
+        storeToken(newToken);
         setDriveNeedsReauth(false);
         doRestore(newToken);
       },
@@ -470,8 +470,7 @@ export default function App() {
                   'https://www.googleapis.com/auth/drive.appdata',
                   (token) => {
                     if (!token) { setDriveRecoveryError('Sign-in failed. Please try again.'); return; }
-                    sessionStorage.setItem('googleAccessToken', token);
-                    dispatch({ type: 'UPDATE_SETTINGS', payload: { googleAccessToken: token } });
+                    storeToken(token);
                     restoreFromDrive(token).then((remote) => {
                       if (!remote) { setDriveRecoveryError('No backup found on Drive.'); return; }
                       if (!Array.isArray((remote as AppState).focusAreas) || (remote as AppState).focusAreas.length === 0) {

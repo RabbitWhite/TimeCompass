@@ -40,8 +40,6 @@ const defaultState: AppState = {
   lastSavedTimestamp: null,
 };
 
-const SESSION_TOKEN_KEY = 'googleAccessToken';
-
 let loadFailed = false;
 
 function loadState(): AppState {
@@ -64,15 +62,12 @@ function loadState(): AppState {
         loadFailed = true;
         return defaultState;
       }
-      // googleAccessToken is short-lived — read from sessionStorage, not localStorage
-      const googleAccessToken = sessionStorage.getItem(SESSION_TOKEN_KEY) ?? '';
       const loaded = {
         ...defaultState,
         ...parsed,
         settings: {
           ...defaultState.settings,
           ...parsed.settings,
-          googleAccessToken,
           gamification: { ...defaultState.settings.gamification, ...parsed.settings?.gamification },
           // Explicit fallbacks for Drive-critical fields — ?? so false is respected,
           // || for googleClientId so empty string also falls back to default.
@@ -115,9 +110,6 @@ export function readRecoveryRecord(): { clientId: string; driveBackupEnabled: bo
 
 function saveState(state: AppState) {
   try {
-    // Persist googleAccessToken to sessionStorage only (token is short-lived)
-    sessionStorage.setItem(SESSION_TOKEN_KEY, state.settings.googleAccessToken ?? '');
-    // Save all other state to localStorage, excluding the access token
     const { googleAccessToken: _omit, ...otherSettings } = state.settings;
     const now = new Date().toISOString();
     localStorage.setItem(STORAGE_KEY, JSON.stringify({

@@ -11,7 +11,7 @@ import Modal from './components/Modal';
 import SplashScreen from './components/SplashScreen';
 import { useApp, readRecoveryRecord, writeRecoveryRecord } from './store';
 import { calculateWeeklyScore, getWeekStart, getPeriodIndex, getPeriodDateRange, computeMaxWeekPoints, getCompletedPeriodEuros, pointsToEuros, formatEuros, generateId } from './utils';
-import { getDriveToken, storeToken, clearDriveToken, syncToDrive, restoreFromDrive, attemptSilentReauth } from './utils/driveSync';
+import { getDriveToken, storeToken, clearDriveToken, TOKEN_EXPIRY_KEY, syncToDrive, restoreFromDrive, attemptSilentReauth } from './utils/driveSync';
 import { triggerBackupDownload, AUTO_BACKUP_INTERVAL_MS, AUTO_BACKUP_KEY } from './utils/backup';
 import type { AppState, GamificationSettings, AppSettings, WalletTransaction } from './types';
 import './App.css';
@@ -159,8 +159,23 @@ export default function App() {
 
     const handleVisibilityChange = async () => {
       if (document.visibilityState !== 'hidden') return;
-      const token = getDriveToken();
+      let token = getDriveToken();
       if (!token) return;
+
+      const expiry = Number(localStorage.getItem(TOKEN_EXPIRY_KEY) ?? '0');
+      if (expiry - Date.now() < 5 * 60 * 1000) {
+        await new Promise<void>((resolve) => {
+          attemptSilentReauth(
+            stateRef.current.settings.googleClientId,
+            'https://www.googleapis.com/auth/drive.appdata',
+            (newToken) => {
+              if (newToken) storeToken(newToken);
+              resolve();
+            },
+          );
+        });
+        token = getDriveToken() ?? token;
+      }
 
       const s = stateRef.current;
       const { lastSavedTimestamp, settings: { driveLastSynced, driveFileId } } = s;

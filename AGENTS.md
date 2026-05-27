@@ -33,3 +33,5 @@ This step is required for changes to go live on GitHub Pages. Forgetting it mean
 - Must be run from the repo root
 - Regenerates `dist/` — always run before deploying
 - Never run autonomously — always wait for explicit instruction
+- tsconfig.cdn.json ignoreDeprecations must be "5.0" not "6.0"
+- build-cdn.sh uses macOS sed — always use sed -i '' not sed -i

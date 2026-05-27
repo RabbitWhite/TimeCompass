@@ -1,7 +1,7 @@
 # OAuth / Google Authentication Audit
 
 **Date:** 2026-04-28  
-**Scope:** All OAuth and Google Identity Services code in the Lifetracker (Time Compass) repo
+**Scope:** All OAuth and Google Identity Services code in the TimeCompass repo
 
 ---
 

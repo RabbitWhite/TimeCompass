@@ -1,4 +1,4 @@
-# LifeTracker Technical Documentation
+# TimeCompass Technical Documentation
 
 ## 1. Architecture Overview
 
@@ -30,7 +30,7 @@
          |                                        |
 +--------v--------+                    +----------v-----------+
 |   localStorage   |                    | Google Calendar API   |
-| (lifetracker-    |                    | (external, optional)  |
+| (timecompass-    |                    | (external, optional)  |
 |  state)          |                    +-----------------------+
 +------------------+
 ```
@@ -270,7 +270,7 @@
  useEffect detects state change
        |
        v
- saveState() -> localStorage.setItem('lifetracker-state', JSON.stringify(state))
+ saveState() -> localStorage.setItem('timecompass-state', JSON.stringify(state))
 ```
 
 ### 3.3 Complete Action Catalog
@@ -453,7 +453,7 @@ dispatch(UPDATE_SETTINGS, { googleCalendarConnected: true })
 
 | Function | Input | Output | Description |
 |----------|-------|--------|-------------|
-| `loadState()` | _(none)_ | `AppState` | Reads and parses `localStorage['lifetracker-state']`; merges with defaults for forward-compatibility. |
+| `loadState()` | _(none)_ | `AppState` | Reads and parses `localStorage['timecompass-state']`; merges with defaults for forward-compatibility. |
 | `saveState(state)` | `AppState` | `void` | Serializes state to localStorage. |
 | `reducer(state, action)` | `AppState, AppAction` | `AppState` | Pure reducer handling all 18 action types. |
 | `AppProvider({children})` | `ReactNode` | JSX | Context provider; initializes reducer with `loadState`, auto-saves on every state change. |

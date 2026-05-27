@@ -293,7 +293,7 @@ export default function App() {
         style={{
           position: 'fixed', inset: 0, zIndex: 100,
           background: '#f0e6d0',
-          backgroundImage: "url('/Lifetracker/background.png')",
+          backgroundImage: "url('/TimeCompass/background.png')",
           backgroundSize: 'cover',
           backgroundPosition: 'center top',
           display: 'flex',

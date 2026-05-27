@@ -118,7 +118,7 @@ export default function Statistics() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `lifetracker-${period}.csv`;
+    link.download = `timecompass-${period}.csv`;
     link.click();
     URL.revokeObjectURL(url);
   }, [entries, state.focusAreas, state.projects, period]);

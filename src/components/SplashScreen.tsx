@@ -15,7 +15,7 @@ export default function SplashScreen() {
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: '#000' }}>
       <video
-        src="/Lifetracker/TimeCompass_Intro.mp4"
+        src="/TimeCompass/TimeCompass_Intro.mp4"
         autoPlay
         muted
         playsInline
@@ -25,7 +25,7 @@ export default function SplashScreen() {
       />
       {showFallback && (
         <img
-          src="/Lifetracker/cover.png"
+          src="/TimeCompass/cover.png"
           alt=""
           onClick={() => setVisible(false)}
           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}

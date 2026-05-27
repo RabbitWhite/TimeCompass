@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  base: '/Lifetracker/',
+  base: '/TimeCompass/',
   server: {
     host: true,
     port: 5173,

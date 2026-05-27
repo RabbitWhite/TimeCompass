@@ -10,7 +10,7 @@ Scope: every localStorage/sessionStorage read and write in the entire codebase.
 | Constant | Value |
 |---|---|
 | `STORAGE_KEY` | `timecompass-state` |
-| `LEGACY_STORAGE_KEY` | `lifetracker-state` |
+| `LEGACY_STORAGE_KEY` | `timecompass-state` |
 | `SESSION_TOKEN_KEY` | `googleAccessToken` (sessionStorage only) |
 | `SPLASH_SESSION_KEY` | `splash-shown` (sessionStorage, in SplashScreen.tsx) |
 

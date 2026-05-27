@@ -1,4 +1,4 @@
-# LifeTracker Component Audit
+# TimeCompass Component Audit
 
 > Read-only audit of `src/` as of 2026-03-22 (post-restore commit 2fcc700).
 
@@ -35,7 +35,7 @@
 - Gamification: `SAVE_WEEKLY_SCORE`
 - Templates: `ADD_WEEK_TEMPLATE`, `UPDATE_WEEK_TEMPLATE`, `DELETE_WEEK_TEMPLATE`, `APPLY_WEEK_TEMPLATE`
 
-**Persistence**: Auto-saves to `localStorage` key `lifetracker-state` after every dispatch.
+**Persistence**: Auto-saves to `localStorage` key `timecompass-state` after every dispatch.
 
 ---
 

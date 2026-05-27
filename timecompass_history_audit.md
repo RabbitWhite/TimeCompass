@@ -1,4 +1,4 @@
-# Lifetracker Git History Audit
+# TimeCompass Git History Audit
 **Generated:** 2026-03-22
 **Audited by:** Claude (claude/fix-mobile-syncing-a0x4o)
 
@@ -8,7 +8,7 @@
 
 | # | SHA (short) | Date | Author | Message |
 |---|-------------|------|--------|---------|
-| 1 | `cdb0760` | 2026-02-14 | Claude | feat: implement LifeTracker mobile app with full feature set |
+| 1 | `cdb0760` | 2026-02-14 | Claude | feat: implement TimeCompass mobile app with full feature set |
 | 2 | `1e2a4d2` | 2026-02-15 | Claude | feat: add gamification system with points, balance scoring, and streaks |
 | 3 | `f6e1e53` | 2026-02-15 | Claude | docs: add technical documentation and developer's toolbook |
 | 4 | `a9385f5` | 2026-02-16 | Claude | ci: add GitHub Pages deployment for mobile testing |
@@ -22,7 +22,7 @@
 | 12 | `7c7710d` | 2026-02-17 | Claude | fix: precache all build assets in service worker for reliable offline |
 | 13 | `c6e739a` | 2026-02-17 | Claude | fix: resolve mobile syncing issues with SW updates and stale sessions |
 | 14 | `3f5fa66` | 2026-02-20 | RabbitWhite | Added graphics for the project. |
-| 15 | `489d651` | 2026-02-20 | RabbitWhite | Merge branch 'claude/lifetracker-mobile-app-xnOiw' (into same) |
+| 15 | `489d651` | 2026-02-20 | RabbitWhite | Merge branch 'claude/timecompass-mobile-app-xnOiw' (into same) |
 | 16 | `412b652` | 2026-02-20 | Claude | feat: integrate custom graphics (icon, splash screen, background) |
 | 17 | `3c36a32` | 2026-02-20 | Claude | fix: gate deploy job on main branch |
 | 18 | `c4586f5` | 2026-02-20 | Claude | fix: also allow deploy from feature branch |
@@ -76,7 +76,7 @@
 | 66 | `2eefdf2` | 2026-03-21 | Claude | fix: correct branch trigger case to Main |
 | 67 | `ea01666` | 2026-03-22 | Claude | docs: add AGENTS.md with project conventions |
 
-**Note on branching:** `master` and `Main` diverged early. All active development happened on `claude/fix-mobile-syncing-a0x4o` → merged into `Main` via PRs. The branch `claude/lifetracker-mobile-app-xnOiw` was the initial dev branch.
+**Note on branching:** `master` and `Main` diverged early. All active development happened on `claude/fix-mobile-syncing-a0x4o` → merged into `Main` via PRs. The branch `claude/timecompass-mobile-app-xnOiw` was the initial dev branch.
 
 ---
 

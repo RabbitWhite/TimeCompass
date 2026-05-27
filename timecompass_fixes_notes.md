@@ -1,4 +1,4 @@
-# Lifetracker PWA Fixes — Reviewer Notes
+# TimeCompass PWA Fixes — Reviewer Notes
 
 ## Fix 1: Automated Cache Busting
 
@@ -6,20 +6,20 @@
 
 **PASS.** The script always begins with `rm -rf dist && mkdir -p dist/...`, which deletes and
 recreates the dist directory before any files are written. The heredoc then writes `dist/sw.js`
-with the literal string `lifetracker-v11`, and `sed` immediately replaces it with
-`lifetracker-<GIT_SHA>`. Running `build-cdn.sh` multiple times on the same commit will always
+with the literal string `timecompass-v11`, and `sed` immediately replaces it with
+`timecompass-<GIT_SHA>`. Running `build-cdn.sh` multiple times on the same commit will always
 produce the same result. There is no risk of double-substitution or corruption.
 
 ### Does the pattern replace only the version string and nothing else? — HIGH PRIORITY
 
-**PASS.** The sed pattern `s/lifetracker-v[0-9]*/lifetracker-${GIT_SHA}/` is scoped to the
-literal prefix `lifetracker-v` followed by digits. In the heredoc that generates `dist/sw.js`,
-this exact string appears exactly once: `const CACHE_NAME = 'lifetracker-v11';`. No other
-content in the heredoc matches `lifetracker-v[0-9]*`. The pattern will not affect any other
+**PASS.** The sed pattern `s/timecompass-v[0-9]*/timecompass-${GIT_SHA}/` is scoped to the
+literal prefix `timecompass-v` followed by digits. In the heredoc that generates `dist/sw.js`,
+this exact string appears exactly once: `const CACHE_NAME = 'timecompass-v11';`. No other
+content in the heredoc matches `timecompass-v[0-9]*`. The pattern will not affect any other
 strings (e.g. comments, URLs, or variable names).
 
 **Minor note:** The sed pattern uses `[0-9]*` (zero or more digits). This means it would also
-match the bare string `lifetracker-v` with no digits, but no such string exists in the heredoc
+match the bare string `timecompass-v` with no digits, but no such string exists in the heredoc
 output, so this is harmless in practice.
 
 ---
@@ -49,12 +49,12 @@ dispatch, so there is no intermediate render where one is cleared but not the ot
 
 ### Does the id value match the app's GitHub Pages base path? — LOW PRIORITY
 
-**PASS.** The value `"id": "/Lifetracker/"` matches the app's GitHub Pages deployment path.
-The base path is consistently `/Lifetracker/` throughout the codebase:
-- `build-cdn.sh` line 43: replaces `import.meta.env.BASE_URL` with `"/Lifetracker/"`
-- `dist/index.html`: `<base href="/Lifetracker/" />`
-- `manifest.json` `start_url`: `"/Lifetracker/"`
-- `manifest.json` `scope`: `"/Lifetracker/"`
+**PASS.** The value `"id": "/TimeCompass/"` matches the app's GitHub Pages deployment path.
+The base path is consistently `/TimeCompass/` throughout the codebase:
+- `build-cdn.sh` line 43: replaces `import.meta.env.BASE_URL` with `"/TimeCompass/"`
+- `dist/index.html`: `<base href="/TimeCompass/" />`
+- `manifest.json` `start_url`: `"/TimeCompass/"`
+- `manifest.json` `scope`: `"/TimeCompass/"`
 
 The `id` field correctly matches all of these, ensuring PWA identity stability if `start_url`
 changes in the future.

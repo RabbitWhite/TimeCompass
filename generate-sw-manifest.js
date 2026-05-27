@@ -9,7 +9,7 @@ import { readdirSync, statSync, readFileSync, writeFileSync } from 'fs';
 import { join, relative } from 'path';
 
 const DIST = 'dist';
-const BASE = '/Lifetracker/';
+const BASE = '/TimeCompass/';
 
 function walkDir(dir) {
   const results = [];

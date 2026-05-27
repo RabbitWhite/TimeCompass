@@ -1,4 +1,4 @@
-# Lifetracker UX Redesign — Implementation Plan
+# TimeCompass UX Redesign — Implementation Plan
 
 ## Codebase Snapshot
 

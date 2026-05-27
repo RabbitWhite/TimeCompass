@@ -40,7 +40,7 @@ def process_file(path):
     )
 
     # Replace import.meta.env.BASE_URL with the actual base path
-    content = content.replace('import.meta.env.BASE_URL', '"/Lifetracker/"')
+    content = content.replace('import.meta.env.BASE_URL', '"/TimeCompass/"')
 
     # Remove CSS side-effect imports
     content = re.sub(r'import\s+["\'][^"\']+\.css["\'];?\n?', '', content)
@@ -79,7 +79,7 @@ cp src/App.css dist/
 # 5. Generate sw.js with correct precache list (replaces the Vite placeholder version)
 cat > dist/sw.js << 'SWEOF'
 const CACHE_NAME = 'timecompass-v11';
-const BASE = '/Lifetracker/';
+const BASE = '/TimeCompass/';
 
 // Critical files: if any of these fail to cache, the SW install fails (app won't work)
 const CRITICAL_URLS = [
@@ -220,16 +220,16 @@ cat > dist/index.html << 'HTML'
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <base href="/Lifetracker/" />
+    <base href="/TimeCompass/" />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="theme-color" content="#0f0f1a" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <link rel="manifest" href="/Lifetracker/manifest.json" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/Lifetracker/icon-180x180.png" />
-    <link rel="stylesheet" href="/Lifetracker/App.css" />
-    <link rel="preload" as="video" href="/Lifetracker/TimeCompass_Intro.mp4" />
+    <link rel="manifest" href="/TimeCompass/manifest.json" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/TimeCompass/icon-180x180.png" />
+    <link rel="stylesheet" href="/TimeCompass/App.css" />
+    <link rel="preload" as="video" href="/TimeCompass/TimeCompass_Intro.mp4" />
     <title>Time Compass</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script type="importmap">
@@ -246,7 +246,7 @@ cat > dist/index.html << 'HTML'
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/Lifetracker/main.js"></script>
+    <script type="module" src="/TimeCompass/main.js"></script>
   </body>
 </html>
 HTML

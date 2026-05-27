@@ -1,4 +1,4 @@
-# Lifetracker Build & Deploy Pipeline Audit
+# TimeCompass Build & Deploy Pipeline Audit
 
 _Date: 2026-03-21_
 
@@ -60,27 +60,27 @@ Cons:
 
 ## 4. Issues Found
 
-### 4.1 Missing `<base href="/Lifetracker/">` in `index.html` (root and CDN template)
+### 4.1 Missing `<base href="/TimeCompass/">` in `index.html` (root and CDN template)
 
 Both the Vite source `index.html` (repo root) and the HTML template inside `build-cdn.sh` are missing:
 
 ```html
-<base href="/Lifetracker/" />
+<base href="/TimeCompass/" />
 ```
 
-This tag tells the browser that all relative URLs (including SPA navigation and service worker scope) are relative to `/Lifetracker/`. Without it:
+This tag tells the browser that all relative URLs (including SPA navigation and service worker scope) are relative to `/TimeCompass/`. Without it:
 - Client-side routing can break when navigating directly to sub-routes
 - The service worker may register with the wrong scope
-- Relative asset fetches may resolve against `/` instead of `/Lifetracker/`
+- Relative asset fetches may resolve against `/` instead of `/TimeCompass/`
 
-**Fix:** Add `<base href="/Lifetracker/" />` as the first element inside `<head>` in both locations. (Vite already handles absolute asset URL prefixing via `vite.config.ts: base: '/Lifetracker/'`, so the `<base>` tag is an additional safety net for the browser's URL resolution.)
+**Fix:** Add `<base href="/TimeCompass/" />` as the first element inside `<head>` in both locations. (Vite already handles absolute asset URL prefixing via `vite.config.ts: base: '/TimeCompass/'`, so the `<base>` tag is an additional safety net for the browser's URL resolution.)
 
 ### 4.2 Workflow triggers on `main` (lowercase), but default branch is `Main` (uppercase)
 
 ```yaml
 on:
   push:
-    branches: [main, claude/lifetracker-mobile-app-xnOiw]
+    branches: [main, claude/timecompass-mobile-app-xnOiw]
 ```
 
 The remote default branch is `Main` (confirmed via `git ls-remote`). GitHub branch matching in workflow triggers is **case-sensitive**. Pushes to `Main` will not trigger the deploy workflow.
@@ -97,8 +97,8 @@ This is a pre-existing structural issue; resolving it fully is out of scope for 
 
 ## 5. Changes Applied
 
-1. **`index.html` (root):** Added `<base href="/Lifetracker/" />` as first child of `<head>`.
-2. **`build-cdn.sh`:** Added `<base href="/Lifetracker/" />` to the generated `dist/index.html` template.
+1. **`index.html` (root):** Added `<base href="/TimeCompass/" />` as first child of `<head>`.
+2. **`build-cdn.sh`:** Added `<base href="/TimeCompass/" />` to the generated `dist/index.html` template.
 3. **`.github/workflows/deploy.yml`:** Changed trigger branch `main` → `Main` to match the actual default branch name.
 
 No changes were made to the deployment path — it remains `./dist`, which is already correct (Option A).

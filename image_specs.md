@@ -1,4 +1,4 @@
-# LifeTracker Image Specifications
+# TimeCompass Image Specifications
 
 Complete inventory of every image asset in the repository — filenames, dimensions, locations, and how each is referenced — followed by a designer checklist for a full rebrand.
 
@@ -67,7 +67,7 @@ The PWA manifest at `public/manifest.json` (also mirrored at `dist/manifest.json
 ]
 ```
 
-All four `src` values are relative paths resolved against the manifest URL, which is served from `/Lifetracker/` (the Vite `base` path). The manifest also sets:
+All four `src` values are relative paths resolved against the manifest URL, which is served from `/TimeCompass/` (the Vite `base` path). The manifest also sets:
 - `background_color`: `#0f0f1a` (used as placeholder while icons load)
 - `theme_color`: `#6c63ff`
 
@@ -79,10 +79,10 @@ All four `src` values are relative paths resolved against the manifest URL, whic
 
 ```html
 <!-- Line 9: PWA manifest (contains further icon references) -->
-<link rel="manifest" href="/Lifetracker/manifest.json" />
+<link rel="manifest" href="/TimeCompass/manifest.json" />
 
 <!-- Line 10: Apple home-screen icon -->
-<link rel="apple-touch-icon" sizes="180x180" href="/Lifetracker/icon-180x180.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="/TimeCompass/icon-180x180.png" />
 ```
 
 There are no `<img>` tags, inline `<svg>` image elements, or other image references in `index.html`. No `favicon.ico` exists; the app relies on the manifest icons and the apple-touch-icon for all platform-specific icon needs.
@@ -95,7 +95,7 @@ There are no `<img>` tags, inline `<svg>` image elements, or other image referen
 
 **Line 29:**
 ```css
-background-image: url('/Lifetracker/background.png');
+background-image: url('/TimeCompass/background.png');
 ```
 Applied to the `body` element. The image tiles/covers the full viewport. The app's dark background color (`#0f0f1a`) shows through until the image loads.
 

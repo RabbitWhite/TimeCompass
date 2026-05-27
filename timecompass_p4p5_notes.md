@@ -1,4 +1,4 @@
-# Lifetracker PWA Hygiene Review Notes — P4/P5 Fixes
+# TimeCompass PWA Hygiene Review Notes — P4/P5 Fixes
 
 ## Fix 1: skipWaiting Guard (HIGH)
 
@@ -25,7 +25,7 @@ Changes applied to:
 
 **Does googleClientId remain in localStorage?**
 Yes. `googleClientId` is part of the `settings` object that is serialized as part of the main
-app state blob and saved to `localStorage` under the key `lifetracker-state`. The fix
+app state blob and saved to `localStorage` under the key `timecompass-state`. The fix
 explicitly omits only `googleAccessToken` from that blob before writing to `localStorage`.
 `googleClientId` is untouched.
 

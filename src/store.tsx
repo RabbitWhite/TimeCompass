@@ -2,7 +2,7 @@ import { createContext, useContext, useReducer, useEffect, type ReactNode } from
 import type { AppState, AppAction, WalletTransaction } from './types';
 
 const STORAGE_KEY = 'timecompass-state';
-const LEGACY_STORAGE_KEY = 'lifetracker-state';
+const LEGACY_STORAGE_KEY = 'timecompass-state';
 export const RECOVERY_KEY = 'timecompass-recovery';
 
 const defaultState: AppState = {

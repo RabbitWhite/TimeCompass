@@ -1,5 +1,5 @@
-const CACHE_NAME = 'lifetracker-v4';
-const BASE = '/Lifetracker/';
+const CACHE_NAME = 'timecompass-v4';
+const BASE = '/TimeCompass/';
 
 // This placeholder is replaced at build time by generate-sw-manifest.js
 // with the actual list of all files in dist/

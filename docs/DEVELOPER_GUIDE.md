@@ -1,6 +1,6 @@
-# LifeTracker Developer's Toolbook
+# TimeCompass Developer's Toolbook
 
-A practical guide for updating content, settings, and behavior of the LifeTracker app.
+A practical guide for updating content, settings, and behavior of the TimeCompass app.
 
 ---
 
@@ -437,7 +437,7 @@ The CSS file is organized by section with comment headers:
 
 ### How Persistence Works
 
-- **Save:** `saveState(state)` writes the full `AppState` as JSON to `localStorage` key `lifetracker-state` on every state change (via `useEffect` in `AppProvider`)
+- **Save:** `saveState(state)` writes the full `AppState` as JSON to `localStorage` key `timecompass-state` on every state change (via `useEffect` in `AppProvider`)
 - **Load:** `loadState()` reads and deep-merges with `defaultState` on app start
 
 ### Forward Compatibility
@@ -470,7 +470,7 @@ This means:
 To clear all user data, delete the localStorage key:
 
 ```javascript
-localStorage.removeItem('lifetracker-state');
+localStorage.removeItem('timecompass-state');
 location.reload();
 ```
 
@@ -478,11 +478,11 @@ location.reload();
 
 ```javascript
 // Export
-const data = localStorage.getItem('lifetracker-state');
+const data = localStorage.getItem('timecompass-state');
 console.log(data); // Copy the JSON
 
 // Import
-localStorage.setItem('lifetracker-state', '{"focusAreas":[...]}');
+localStorage.setItem('timecompass-state', '{"focusAreas":[...]}');
 location.reload();
 ```
 

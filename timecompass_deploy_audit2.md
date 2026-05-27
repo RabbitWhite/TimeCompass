@@ -1,4 +1,4 @@
-# LifeTracker Deploy Audit 2
+# TimeCompass Deploy Audit 2
 
 **Date:** 2026-03-21
 **Branch:** claude/fix-mobile-syncing-a0x4o
@@ -20,7 +20,7 @@ It references `src/main.tsx` — a TypeScript file that only works when Vite's d
 
 The production-ready file is **`dist/index.html`**, which:
 - Loads React from CDN via an importmap (esm.sh)
-- References compiled `main.js` with the correct base path `/Lifetracker/main.js`
+- References compiled `main.js` with the correct base path `/TimeCompass/main.js`
 - Includes the compiled CSS link
 - Includes the Google GSI client script
 
@@ -103,7 +103,7 @@ This explains exactly why the root `index.html` is being served: the Pages sourc
 
 ### Code (already correct — no changes needed):
 - `deploy.yml` — correct as-is (`path: ./dist`, uses `upload-pages-artifact` + `deploy-pages`)
-- `vite.config.ts` — correct (`base: '/Lifetracker/'`)
+- `vite.config.ts` — correct (`base: '/TimeCompass/'`)
 - `dist/index.html` — correct production entry point
 - `root/index.html` — fine as a dev file, irrelevant to production
 
@@ -112,8 +112,8 @@ This explains exactly why the root `index.html` is being served: the Pages sourc
 > **GitHub repo → Settings → Pages → Build and deployment → Source → set to "GitHub Actions"**
 
 This single change makes the workflow the authority for what gets served. From that point:
-- Every push to `Main` (or `claude/lifetracker-mobile-app-xnOiw`) triggers a build + deploy of `dist/`
-- The site at `https://<owner>.github.io/Lifetracker/` will serve `dist/index.html`
+- Every push to `Main` (or `claude/timecompass-mobile-app-xnOiw`) triggers a build + deploy of `dist/`
+- The site at `https://<owner>.github.io/TimeCompass/` will serve `dist/index.html`
 - The root `index.html` will never be served in production
 
 ### Nothing else needs to change.

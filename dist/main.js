@@ -6,7 +6,7 @@ import { AppProvider } from './store.js';
 import App from './App.js';
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register("/Lifetracker/" + 'sw.js')
+        navigator.serviceWorker.register("/TimeCompass/" + 'sw.js')
             .then((registration) => {
             registration.addEventListener('updatefound', () => {
                 const newWorker = registration.installing;

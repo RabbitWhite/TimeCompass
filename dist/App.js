@@ -298,7 +298,7 @@ export default function App() {
     return (_jsxs(_Fragment, { children: [_jsx(SplashScreen, {}), isFirstRun && (_jsxs("div", { style: {
                     position: 'fixed', inset: 0, zIndex: 100,
                     background: '#f0e6d0',
-                    backgroundImage: "url('/Lifetracker/background.png')",
+                    backgroundImage: "url('/TimeCompass/background.png')",
                     backgroundSize: 'cover',
                     backgroundPosition: 'center top',
                     display: 'flex',

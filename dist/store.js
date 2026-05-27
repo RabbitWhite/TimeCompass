@@ -1,7 +1,7 @@
 import { jsx as _jsx } from "react/jsx-runtime";
 import { createContext, useContext, useReducer, useEffect } from 'react';
 const STORAGE_KEY = 'timecompass-state';
-const LEGACY_STORAGE_KEY = 'lifetracker-state';
+const LEGACY_STORAGE_KEY = 'timecompass-state';
 export const RECOVERY_KEY = 'timecompass-recovery';
 const defaultState = {
     focusAreas: [],

@@ -125,13 +125,17 @@ export default function WeekTemplates() {
                     const areaProjects = state.projects.filter(p => p.focusAreaId === area.id && p.status !== 'completed');
                     const hasProjects = areaProjects.length > 0;
                     const isExpanded = expandedAreas.has(area.id);
-                    return (_jsxs("div", { className: "tmpl-area-block", children: [_jsxs("div", { className: "tmpl-area-row", children: [_jsxs("div", { className: "allocation-name", children: [_jsx("span", { className: "dot", style: { background: area.color, width: 10, height: 10, borderRadius: '50%', display: 'inline-block' } }), _jsx("span", { children: area.name })] }), _jsxs("div", { style: { display: 'flex', alignItems: 'center', gap: 6 }, children: [hasProjects ? (_jsxs("span", { style: {
+                    return (_jsxs("div", { className: "tmpl-area-block", children: [_jsxs("div", { className: "tmpl-area-row", children: [_jsxs("div", { className: "allocation-name", children: [_jsx("span", { className: "dot", style: { background: area.color, width: 10, height: 10, borderRadius: '50%', display: 'inline-block' } }), _jsx("span", { children: area.name })] }), _jsxs("div", { style: { display: 'flex', alignItems: 'center', gap: 6 }, children: [hasProjects ? (
+                                            // Read-only sum derived from project targets
+                                            _jsxs("span", { style: {
                                                     minWidth: 52,
                                                     textAlign: 'right',
                                                     fontWeight: 700,
                                                     fontSize: 15,
                                                     color: 'var(--text)',
-                                                }, children: [target.weeklyTargetHours, "h"] })) : (_jsx("input", { className: "form-input tmpl-hours-input", type: "number", value: rawHours[area.id] ?? String(target.weeklyTargetHours), onChange: e => {
+                                                }, children: [target.weeklyTargetHours, "h"] })) : (
+                                            // Editable when no projects exist
+                                            _jsx("input", { className: "form-input tmpl-hours-input", type: "number", value: rawHours[area.id] ?? String(target.weeklyTargetHours), onChange: e => {
                                                     const raw = e.target.value;
                                                     const v = parseFloat(raw);
                                                     setRawHours(prev => ({ ...prev, [area.id]: raw }));

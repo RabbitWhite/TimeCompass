@@ -1,8 +1,15 @@
+# TimeCompass — Agent Guidelines
+
+**Project:** TimeCompass (formerly LifeTracker)
+**Local path:** ~/Workspace/TimeCompass
+**GitHub repo:** github.com/RabbitWhite/TimeCompass
+**Deployed at:** https://rabbitwhite.github.io/TimeCompass/
+
 # Agent Guidelines
 
-- Default branch is Main (capital M) — all PRs target Main, all workflow triggers use Main
+- Default branch is main — all PRs target main, all workflow triggers use main
 - GitHub Pages deploys via GitHub Actions from dist/ — never change Pages source setting to "Deploy from branch"
-- Never push directly to Main — always use a PR
+- Never push directly to main — always use a PR
 - Run ./build-cdn.sh and verify dist/ is complete before committing
 - Never revert a PR without first auditing exactly what will be lost
 - At the start of every session, check for missions/next_mission.md — if it exists, read it and execute it

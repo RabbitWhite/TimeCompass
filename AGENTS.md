@@ -59,3 +59,15 @@ These rules apply to any task that uses the Discord MCP server tools.
 - Bot name: DevHub Agent#0197
 - Guild ID: available in DISCORD_GUILD_ID environment variable
 - Server name: My Dev Hub
+
+## MISSION TIERS
+
+Every mission is classified before work starts. When in doubt, it is Tier 1.
+
+Tier 1 — full architect loop. A brief is drafted and approved in the planning conversation before Claude Code begins. Applies to: anything touching build, deploy, or CI configuration including GitHub Actions and Pages; cross-file structural changes or refactors; renames of files, namespaces, or identifiers used across files; anything touching authentication or OAuth; Unity scene or prefab wiring; Unreal Engine physics or input; database or storage schema changes; anything the mission itself describes as an audit.
+
+Tier 2 — direct with plan approval. No separate brief. Claude Code is invoked directly in plan mode, presents its plan in-session, and proceeds only after explicit approval. Applies to: single-file bug fixes; dependency version bumps; documentation, lore, and other content-only text changes; adding tests without changing implementation; changes to standalone tooling scripts.
+
+Escalation rule: if a Tier 2 mission turns out to require touching build or deploy configuration, more than three files, or anything on the Tier 1 list, stop immediately, report, and reclassify as Tier 1.
+
+Both tiers: work on an agent/claude branch from main, open a PR targeting main, never merge without human review.

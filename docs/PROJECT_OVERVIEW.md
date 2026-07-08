@@ -10,13 +10,13 @@ _Edit the STATUS and KEY PATTERNS sections manually; they are preserved on re-ru
 
 **Current milestone:** Stable — rename from LifeTracker complete, five-tab UX deployed
 
-**Working:** Full PWA, Google Calendar OAuth, prize wallet, motivation splash, manual period reset
+**Working:** Full PWA, Google Identity Services OAuth with Drive appdata, prize wallet, motivation splash, manual period reset
 
-**Scaffolded / incomplete:** [fill in]
+**Scaffolded / incomplete:** None — feature set stable since the LifeTracker rename; no half-built features in src
 
-**Known technical debt:** [fill in]
+**Known technical debt:** dist/ tracked in repo (deploy-from-dist model) causes noisy commits; tsconfig.cdn.json pinned with ignoreDeprecations 5.0, will break on a future TypeScript major; build-cdn.sh uses macOS-only sed -i '' syntax, not portable; overview generator has a known false-positive class (PascalCase arrow helpers detected as components)
 
-**Next planned work:** [fill in]
+**Next planned work:** GENTS.md mission-tiers section (Pilot 2 rollout); no feature work currently queued
 
 <!-- STATUS:END -->
 

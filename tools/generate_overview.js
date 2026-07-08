@@ -37,42 +37,15 @@ function detectProjectName() {
   return path.basename(REPO_ROOT);
 }
 
-function isPoem(projectName) {
-  const lower = projectName.toLowerCase();
-  return (
-    lower.includes('keskustelu') ||
-    lower.includes('poem') ||
-    lower.includes('kolmikarki')
-  );
-}
-
 // ─── Seed content ─────────────────────────────────────────────────────────────
 
-function seedStatusBlock(projectName) {
-  if (isPoem(projectName)) {
-    return [
-      STATUS_BEGIN,
-      '',
-      '**Current milestone:** Vite migration complete; deploy deferred pending kolmikarki rename',
-      '',
-      '**Working:** Vite build, Vitest green, gh-pages deploy configured',
-      '',
-      '**Scaffolded / incomplete:** [fill in]',
-      '',
-      '**Known technical debt:** kolmikarki_* rename pending; no JSDoc coverage',
-      '',
-      '**Next planned work:** kolmikarki rename → deploy',
-      '',
-      STATUS_END,
-    ].join('\n');
-  }
-
+function seedStatusBlock() {
   return [
     STATUS_BEGIN,
     '',
-    '**Current milestone:** Stable — rename from LifeTracker complete, five-tab UX deployed',
+    '**Current milestone:** [fill in]',
     '',
-    '**Working:** Full PWA, Google Calendar OAuth, prize wallet, motivation splash, manual period reset',
+    '**Working:** [fill in]',
     '',
     '**Scaffolded / incomplete:** [fill in]',
     '',
@@ -84,21 +57,11 @@ function seedStatusBlock(projectName) {
   ].join('\n');
 }
 
-function seedPatternsBlock(projectName) {
-  if (isPoem(projectName)) {
-    return [
-      PATTERNS_BEGIN,
-      '',
-      '- Plain JS. dangerouslySetInnerHTML used in poem renderer — intentional, not a bug.',
-      '',
-      PATTERNS_END,
-    ].join('\n');
-  }
-
+function seedPatternsBlock() {
   return [
     PATTERNS_BEGIN,
     '',
-    '- Context + Reducer state management. React Router v6 hash routing. TypeScript throughout.',
+    '- [fill in]',
     '',
     PATTERNS_END,
   ].join('\n');
@@ -128,7 +91,9 @@ function walkDir(dir, results = []) {
 function countLines(filePath) {
   try {
     const content = fs.readFileSync(filePath, 'utf8');
-    return content.split('\n').length;
+    const lines = content.split('\n');
+    if (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
+    return lines.length;
   } catch (_) {
     return 0;
   }
@@ -191,10 +156,11 @@ function detectComponents(filePath) {
     { re: /^export\s+function\s+([A-Za-z0-9_]+)\s*[(<]/, type: 'function' },
     // bare: function Name(
     { re: /^function\s+([A-Za-z0-9_]+)\s*[(<]/, type: 'function' },
-    // export const Name = ( / React.memo / forwardRef
-    { re: /^export\s+const\s+([A-Za-z0-9_]+)\s*=\s*(?:React\.|memo\(|forwardRef\(|\()/, type: 'function' },
-    // const Name = (  — bare
-    { re: /^const\s+([A-Za-z0-9_]+)\s*=\s*(?:React\.|memo\(|forwardRef\(|\()/, type: 'function' },
+    // export const Name = ( / React.memo / forwardRef — tolerates an optional
+    // TS type annotation between the name and `=` (e.g. `: React.FC<Props>`)
+    { re: /^export\s+const\s+([A-Za-z0-9_]+)\s*(?::\s*.+?)?\s*=\s*(?:React\.|memo\(|forwardRef\(|\()/, type: 'function' },
+    // const Name = (  — bare, same type-annotation tolerance
+    { re: /^const\s+([A-Za-z0-9_]+)\s*(?::\s*.+?)?\s*=\s*(?:React\.|memo\(|forwardRef\(|\()/, type: 'function' },
     // class Name extends React.Component / Component / PureComponent
     {
       re: /^(?:export\s+(?:default\s+)?)?class\s+([A-Za-z0-9_]+)\s+extends\s+(?:React\.)?(?:Component|PureComponent)\b/,
@@ -298,7 +264,7 @@ function generateOverview() {
 
   // Section 1: preserve or seed status block
   const existingStatus = extractBetweenSentinels(existingContent, STATUS_BEGIN, STATUS_END);
-  const statusBlock = existingStatus !== null ? existingStatus : seedStatusBlock(projectName);
+  const statusBlock = existingStatus !== null ? existingStatus : seedStatusBlock();
 
   // Section 2: file inventory
   const allFiles = walkDir(SRC_DIR);
@@ -313,9 +279,11 @@ function generateOverview() {
 
   // Section 3: component inventory
   const componentRows = [];
+  const componentsByFile = new Map();
   for (const filePath of sorted) {
     const rel = path.relative(REPO_ROOT, filePath);
     const comps = detectComponents(filePath);
+    componentsByFile.set(filePath, comps);
     for (const { name, type, jsDoc } of comps) {
       componentRows.push(`| \`${name}\` | \`${rel}\` | ${type} | ${jsDoc} |`);
     }
@@ -334,14 +302,12 @@ function generateOverview() {
 
   // Section 5: preserve or seed key patterns
   const existingPatterns = extractBetweenSentinels(existingContent, PATTERNS_BEGIN, PATTERNS_END);
-  const patternsBlock = existingPatterns !== null ? existingPatterns : seedPatternsBlock(projectName);
+  const patternsBlock = existingPatterns !== null ? existingPatterns : seedPatternsBlock();
 
   // Assemble document
-  const today = new Date().toISOString().slice(0, 10);
   const doc = [
     `# ${projectName} — Project Overview`,
     '',
-    `_Generated by \`tools/generate_overview.js\` on ${today}._`,
     '_Edit the STATUS and KEY PATTERNS sections manually; they are preserved on re-run._',
     '',
     '---',
@@ -387,7 +353,7 @@ function generateOverview() {
   let total = 0;
   for (const filePath of sorted) {
     const rel = path.relative(REPO_ROOT, filePath);
-    const comps = detectComponents(filePath);
+    const comps = componentsByFile.get(filePath);
     if (comps.length > 0) {
       console.log(`  ${rel}: ${comps.map(c => c.name).join(', ')}`);
       total += comps.length;

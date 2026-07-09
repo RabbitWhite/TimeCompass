@@ -210,7 +210,7 @@ SWEOF
 
 # Stamp the cache name with the current git SHA so every deploy
 # gets a fresh cache without manual version bumping.
-sed -i '' "s/timecompass-v[0-9]*/timecompass-${GIT_SHA}/" dist/sw.js
+sed -i.bak "s/timecompass-v[0-9]*/timecompass-${GIT_SHA}/" dist/sw.js && rm -f dist/sw.js.bak
 
 # 6. Create index.html with corrected import maps
 # - react-dom added (not just react-dom/client) for react-router-dom's internal imports

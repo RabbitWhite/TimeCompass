@@ -26,7 +26,7 @@ jobs:
           FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
       - name: Install TypeScript
-        run: npm install -g typescript
+        run: npm install -g typescript@5.5.3
 
       - name: Build
         run: bash ./build-cdn.sh

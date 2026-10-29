@@ -96,7 +96,6 @@ const CRITICAL_URLS = [
   BASE + 'pages/Dashboard.js',
   BASE + 'pages/FocusAreaDetail.js',
   BASE + 'pages/FocusAreas.js',
-  BASE + 'pages/Gamification.js',
   BASE + 'pages/Statistics.js',
   BASE + 'pages/Timeline.js',
   BASE + 'pages/Tracking.js',
